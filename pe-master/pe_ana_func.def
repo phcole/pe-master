@@ -1,0 +1,10 @@
+LIBRARY pe-master
+
+EXPORTS
+analyze_pe_file
+check_lib_file_header
+read_lib_func_info
+start_analyze_file
+set_sym_process_func
+analyze_pe_file
+;read_obj_section
