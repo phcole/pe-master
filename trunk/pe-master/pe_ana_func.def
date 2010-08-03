@@ -8,3 +8,4 @@ start_analyze_file
 set_sym_process_func
 analyze_pe_file
 ;read_obj_section
+mem_submem

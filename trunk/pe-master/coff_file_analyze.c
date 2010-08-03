@@ -1,23 +1,3 @@
-/*
- * Copyright 2010 JiJie Shi
- *
- * This file is part of PEMaster.
- *
- * PEMaster is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * PEMaster is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with PEMaster.  If not, see <http://www.gnu.org/licenses/>.
- *
- */
-
 #include "common.h"
 #include "common_analyze.h"
 #include "coff_file_analyze.h"
@@ -36,6 +16,162 @@ dword get_sym_data_len( coff_reloc *relocs, dword cur_reloc_index, dword reloc_c
 	return sym_data_len;
 }
 
+#define FUNC_CODE_FILLED_BYTE 0xcc
+int find_next_func_code( byte *now_data, dword remain_size, byte **func_code, dword *code_size )
+{
+	int ret;
+	int i;
+	int filled_byte_finded;
+	int next_func_finded;
+
+	ret = 0;
+	
+	filled_byte_finded = FALSE;
+	next_func_finded = FALSE;
+	for( i = 0; i < remain_size; i ++ )
+	{
+		if( TRUE == filled_byte_finded )
+		{
+			if( FUNC_CODE_FILLED_BYTE == now_data[ i ] )
+			{
+				continue;
+			}
+			else
+			{
+				next_func_finded = TRUE;
+				break;
+			}
+
+
+		}
+		else
+		{
+			if( FUNC_CODE_FILLED_BYTE == now_data[ i ] )
+			{
+				filled_byte_finded = TRUE;
+			}
+		}
+	}
+
+	if( TRUE == next_func_finded )
+	{
+		*func_code = now_data + i;
+		
+		if( NULL != code_size )
+		{
+			byte *next_func;
+			ret = find_next_func_code( now_data + i, remain_size - i, &next_func, NULL );
+			if( 0 > ret )
+			{
+				next_func = now_data + remain_size;
+			}
+
+			ASSERT( NULL != next_func );
+			*code_size = next_func - ( now_data + i );
+		}
+		return 0;
+	}
+	
+	if( NULL != code_size )
+	{
+		*code_size = 0;
+	}
+
+	*func_code = NULL;
+
+	return -1;
+}
+
+int find_cur_func_code( byte *now_data, dword remain_size, dword *code_size )
+{
+	int ret;
+	int i;
+	int filled_byte_finded;
+	int next_func_finded;
+
+	ret = 0;
+	
+	filled_byte_finded = FALSE;
+	next_func_finded = FALSE;
+	for( i = 0; i < remain_size; i ++ )
+	{
+		if( TRUE == filled_byte_finded )
+		{
+			if( FUNC_CODE_FILLED_BYTE == now_data[ i ] )
+			{
+				continue;
+			}
+			else
+			{
+				next_func_finded = TRUE;
+				break;
+			}
+		}
+		else
+		{
+			if( FUNC_CODE_FILLED_BYTE == now_data[ i ] )
+			{
+				filled_byte_finded = TRUE;
+			}
+		}
+	}
+
+	if( TRUE == next_func_finded )
+	{
+		*code_size = i;
+		return 0;
+	}
+
+	*code_size = 0;
+
+	return -1;
+}
+
+
+int find_func_code_start( byte *sect_data, dword sect_size, dword func_index, byte **func_code, dword *code_size )
+{
+	int ret = 0;
+	int i;
+	byte *next_func;
+	byte *cur_func;
+	dword __code_size;
+	dword finded_size;
+
+	cur_func = sect_data;
+	finded_size = 0;
+
+	if( 0 == func_index )
+	{
+		ret = find_cur_func_code( cur_func, sect_size - finded_size, &__code_size );
+		if( 0 > ret )
+		{
+			__code_size = sect_size;
+		}
+
+		*func_code = cur_func;
+		*code_size = __code_size;
+		return 0;
+	}
+
+	for( i = 0; i < func_index; i ++ )
+	{
+		ret = find_cur_func_code( cur_func, sect_size - finded_size, &__code_size );
+		if( 0 > ret )
+		{
+			return ret;
+		}
+		else
+		{
+			finded_size += __code_size;
+			cur_func += __code_size;
+		}
+	}
+
+	*func_code = cur_func;
+	*code_size = __code_size;
+	return ret;
+}
+
 int analyze_coff_file( byte *data, coff_analyzer *analyzer )
 {
 	int i;
@@ -47,6 +183,7 @@ int analyze_coff_file( byte *data, coff_analyzer *analyzer )
 	dword sym_data_len;
 	dword opt_hdr_len;
 	dword offset;
+	coff_ln_info *ln_info_table;
 	coff_sym_ent *sym_ent_table;
 	coff_sym_ent *sym_ent;
 	coff_reloc *sect_relocs;
@@ -55,6 +192,8 @@ int analyze_coff_file( byte *data, coff_analyzer *analyzer )
 	dword str_offset;
 	char *string;
 	char *sym_name;
+	char *code_name;
+	char *ln_sym_name;
 	
 	offset = 0;
 	file_hdr = ( coff_file_hdr* )data + offset;
@@ -91,12 +230,57 @@ int analyze_coff_file( byte *data, coff_analyzer *analyzer )
 	{
 		sect_hdr = ( coff_sect_hdr* )( data + offset );
 
+		if( data + sect_hdr->sect_offset <= 0x00ba0e8d && data + sect_hdr->size + sect_hdr->sect_offset - 0x00ba0e80 > 0x18 )
+		{
+			int k = 10;
+		}
 #define STYP_TEXT 0x0020
 #define STYP_DATA 0x0040
 #define STYP_BSS 0x0080
 		sect_hdr->flags;
 		sect_hdr->ln_table_offset;
 		sect_relocs = ( coff_reloc* )( data + sect_hdr->sect_rel_offset );
+		ln_info_table = ( coff_ln_info* )( data + sect_hdr->ln_table_offset );
+
+		for( j = 0; j < sect_hdr->ln_num; j ++ )
+		{
+			int ret;
+			dword func_code_len;
+			byte *func_code;
+			ln_info_table[ j ].ln_no;
+
+			ASSERT( ln_info_table[ j ].addr_symbol < file_hdr->syms_num );
+			sym_ent = &sym_ent_table[ ln_info_table[ j ].addr_symbol ];
+
+			if( 0 == sym_ent->sym_id.id.zero )
+			{
+				sym_name = ( byte* )str_table + sym_ent->sym_id.id.offset;
+			}
+			else
+			{
+				sym_name = sym_ent->sym_id.name;
+			}
+
+			if( sect_hdr->flags & STYP_TEXT )
+			{
+				ret = find_func_code_start( data + sect_hdr->sect_offset,sect_hdr->size, j, &func_code, &func_code_len );
+				if( 0 > ret )
+				{
+					ASSERT( FALSE );
+					continue;
+				}
+
+				if( NULL != analyzer->code_analyze )
+				{
+					code_infos code_info;
+					code_info.func_code = func_code;
+					code_info.func_code_len = func_code_len;
+					code_info.func_name = sym_name;
+
+					analyzer->code_analyze( &code_info, analyzer->context );
+				}
+			}
+		}
 
 		for( j = 0; j < sect_hdr->rel_offset_num; j ++ )
 		{
