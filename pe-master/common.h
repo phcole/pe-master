@@ -25,6 +25,9 @@
 #include <conio.h>
 #include <malloc.h>
 
+#define TRUE 1
+#define FALSE 0
+
 #ifndef ASSERT
 #ifdef _DEBUG
 #include <assert.h>
@@ -38,7 +41,18 @@
 
 typedef unsigned long dword;
 typedef unsigned char byte;
+typedef unsigned short word;
+typedef int int32;
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 int read_all_file_data( char *file_name, byte **data, dword *data_len );
+int32 mem_submem(byte* pSubMem, int32 nSubMemLen, byte* pMem, int32 nMemLen);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif //__COMMON_H__

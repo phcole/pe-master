@@ -1,23 +1,3 @@
-/*
- * Copyright 2010 JiJie Shi
- *
- * This file is part of PEMaster.
- *
- * PEMaster is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * PEMaster is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with PEMaster.  If not, see <http://www.gnu.org/licenses/>.
- *
- */
-
 #ifndef __COFF_FILE_ANALYZE_H__
 #define __COFF_FILE_ANALYZE_H__
 
@@ -25,65 +5,65 @@
 #pragma pack( 1 )
 
 typedef struct __coff_file_hdr{
-  unsigned short magic;  
-  unsigned short sect_num;
-  unsigned long  time;
-  unsigned long  syms_offset;
-  unsigned long  syms_num;
-  unsigned short opt_hdr_size;
-  unsigned short flags;
+  unsigned short magic;  // 魔法数字
+  unsigned short sect_num;  // 段落（Section）数
+  unsigned long  time;  // 时间戳
+  unsigned long  syms_offset;  // 符号表偏移
+  unsigned long  syms_num;  // 符号数
+  unsigned short opt_hdr_size;  // 可选头长度
+  unsigned short flags;  // 文件标记
 } coff_file_hdr;
 
 typedef struct __coff_opt_hdr28{
-  unsigned short magic;  
-  unsigned short version;
-  unsigned long  text_size;
-  unsigned long  init_data_size;
-  unsigned long  uninit_data_size;
-  unsigned long  entry;
-  unsigned long  text_base;
-  unsigned long  data_base;
+  unsigned short magic;  // 魔法数字
+  unsigned short version;  // 版本标识
+  unsigned long  text_size;  // 正文（text）段大小
+  unsigned long  init_data_size;  // 已初始化数据段大小
+  unsigned long  uninit_data_size;  // 未初始化数据段大小
+  unsigned long  entry;  // 入口点
+  unsigned long  text_base;  // 正文段基址
+  unsigned long  data_base;  // 数据段基址（在PE32中才有）
 } coff_opt_hdr28;
 
 
 typedef struct __coff_sect_hdr{
-  char           name[8];
-  unsigned long  virt_size;
-  unsigned long  virt_addr;
-  unsigned long  size;
-  unsigned long  sect_offset;
-  unsigned long  sect_rel_offset;
-  unsigned long  ln_table_offset;
-  unsigned short rel_offset_num;
-  unsigned short ln_num;
-  unsigned long  flags;
+  char           name[8];  // 段名
+  unsigned long  virt_size;  // 虚拟大小
+  unsigned long  virt_addr;  // 虚拟地址
+  unsigned long  size;  // 段长度
+  unsigned long  sect_offset;  // 段数据偏移
+  unsigned long  sect_rel_offset;  // 段重定位表偏移
+  unsigned long  ln_table_offset;  // 行号表偏移
+  unsigned short rel_offset_num;  // 重定位表长度
+  unsigned short ln_num;  // 行号表长度
+  unsigned long  flags;  // 段标识
   //unsigned long reserved;
 } coff_sect_hdr;
 
 typedef struct __coff_reloc{
-  unsigned long  ulAddr;
-  unsigned long  ulSymbol;
-  unsigned short usType;
+  unsigned long  ulAddr;  // 定位偏移
+  unsigned long  ulSymbol;  // 符号
+  unsigned short usType;  // 定位类型
 } coff_reloc;
 
 typedef struct {
-    unsigned long addr_symbol;
-    unsigned short ln_no;
+    unsigned long addr_symbol;  // 代码地址或符号索引
+    unsigned short ln_no;  // 行号
 } coff_ln_info;
 
 typedef struct __coff_sym_ent{
   union {
-    char name[8];
+    char name[8];            // 符号名称
     struct {
-      unsigned long zero;
-      unsigned long offset;
+      unsigned long zero;   // 字符串表标识
+      unsigned long offset; // 字符串偏移
     } id;
   } sym_id;
-  unsigned long value;
-  short section;
-  unsigned short type;
-  unsigned char __class;
-  unsigned char aux_num;
+  unsigned long value;     // 符号值
+  short section;            // 符号所在段
+  unsigned short type;     // 符号类型
+  unsigned char __class;     // 符号存储类型
+  unsigned char aux_num;    // 符号附加记录数
 } coff_sym_ent;
 
 typedef struct __coff_str_table

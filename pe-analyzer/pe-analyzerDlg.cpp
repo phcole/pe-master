@@ -1,23 +1,3 @@
-/*
- * Copyright 2010 JiJie Shi
- *
- * This file is part of PEMaster.
- *
- * PEMaster is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * PEMaster is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with PEMaster.  If not, see <http://www.gnu.org/licenses/>.
- *
- */
-
 // pe-analyzerDlg.cpp : 实现文件
 //
 
@@ -178,10 +158,83 @@ HCURSOR CpeanalyzerDlg::OnQueryDragIcon()
 #include "pe_analyze.h"
 #include "lib_analyze.h"
 
+int sum( int num1, int num2 )
+{
+	return num1 + num2;
+}
+
+void dummy()
+{
+	int dummy = 0;
+}
+
+int ret_sample_func_code( byte **org_func_code, dword *func_code_len )
+{
+	int sum_val;
+	dword func_addr_begin;
+	dword func_addr_end;
+	byte *func_code;
+
+	sum_val = sum( 3, 6 );
+
+	func_addr_begin = ( DWORD )( VOID* )sum;
+	func_addr_end = ( DWORD )( VOID* )dummy;
+
+	ASSERT( func_addr_end > func_addr_begin );
+
+	func_code = ( BYTE* )malloc( func_addr_end - func_addr_begin );
+
+	ASSERT( NULL != func_code );
+	memcpy( func_code, ( void* )func_addr_begin, func_addr_end - func_addr_begin );
+
+	if( *func_code == 0xe9 )
+	{
+		dword offset;
+		offset = *( dword* )( func_code + sizeof( byte ) );
+		offset += sizeof( dword ) + sizeof( byte );
+		func_addr_begin += offset;
+		func_addr_end += offset;
+		func_addr_end = ( dword )memchr( ( void* )func_addr_begin, 0xcc, ( dword )( func_addr_end - func_addr_begin ) );
+		if( NULL == func_addr_end )
+		{
+			return -1;
+		}
+	}
+
+	memcpy( func_code, ( void* )func_addr_begin, func_addr_end - func_addr_begin );
+
+	*org_func_code = func_code;
+	*func_code_len = func_addr_end - func_addr_begin;
+
+	return 0;
+}
+
 BOOL g_bStop;
 
 #define MAX_FILTER_LEN 1024
 CHAR g_szFilter[ MAX_FILTER_LEN ] = { 0 };
+
+typedef struct __sym_org_data
+{
+	byte *sym_data;
+	dword sym_data_len;
+} sym_org_data;
+
+int when_func_code_finded( code_infos* code_info, void *context )
+{
+	ASSERT( NULL != context );
+	sym_org_data *org_code = ( sym_org_data* )context;
+
+	if( NULL != org_code->sym_data && 0 != org_code->sym_data_len )
+	{
+		if( 0 <= mem_submem( org_code->sym_data, org_code->sym_data_len, code_info->func_code, code_info->func_code_len ) )
+		{
+			::MessageBox( NULL, code_info->func_name, NULL, NULL );
+		}
+	}
+	return 0;
+}
+
 int when_find_lib_func_name( sym_infos* sym_info, void *context )
 {
 	CString strAddLine;
@@ -209,12 +262,6 @@ int when_find_lib_func_name( sym_infos* sym_info, void *context )
 	return 0;
 }
 
-typedef struct __sym_org_data
-{
-	byte *sym_data;
-	dword sym_data_len;
-} sym_org_data;
-
 sym_org_data g_sym_org_data;
 
 dword CALLBACK thread_read_file_symbols( LPVOID lpParam )
@@ -228,8 +275,10 @@ dword CALLBACK thread_read_file_symbols( LPVOID lpParam )
 	hCtl = ::GetDlgItem( g_pDlg->m_hWnd, IDC_EDIT_FILTER );
 	::GetWindowText( hCtl, g_szFilter, MAX_FILTER_LEN );
 
+	ret_sample_func_code( &g_sym_org_data.sym_data, &g_sym_org_data.sym_data_len );
 	coff_analyzer analyzer;
 	analyzer.strs_analyze = NULL;
+	analyzer.code_analyze = when_func_code_finded;
 	analyzer.syms_analyze = when_find_lib_func_name;
 	analyzer.context = &g_sym_org_data;
 

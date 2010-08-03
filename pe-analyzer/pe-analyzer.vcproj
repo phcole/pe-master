@@ -36,7 +36,7 @@
 				Name="VCLinkerTool"
 				OutputFile="../output/$(ProjectName).exe"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories="&quot;..\pe-master\debug&quot;"
+				AdditionalLibraryDirectories="&quot;..\output&quot;"
 				GenerateDebugInformation="TRUE"
 				SubSystem="2"
 				TargetMachine="1"/>
