@@ -1,3 +1,23 @@
+/*
+ * Copyright 2010 JiJie Shi
+ *
+ * This file is part of PEMaster.
+ *
+ * PEMaster is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * PEMaster is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with PEMaster.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
 #include "common.h"
 #include "common_analyze.h"
 #include "coff_file_analyze.h"
@@ -172,8 +192,83 @@ int find_func_code_start( byte *sect_data, dword sect_size, dword func_index, by
 	return ret;
 }
 
-int analyze_coff_file( byte *data, coff_analyzer *analyzer )
+int check_coff_file_sanity( byte *data, dword data_len )
 {
+	dword remain_data_len;
+	coff_file_hdr *file_hdr;
+	file_hdr = ( coff_file_hdr* )data;
+	
+	remain_data_len = data_len;
+
+	remain_data_len -= sizeof( coff_file_hdr );
+
+	if( file_hdr->magic != I386_COFF_FILE_MAGIC )
+	{
+		return -1;
+	}
+
+	if( file_hdr->syms_offset > data_len )
+	{
+		return -1;
+	}
+
+	if( file_hdr->opt_hdr_size > remain_data_len )
+	{
+		return -1;
+	}
+
+	if( file_hdr->sect_num * sizeof( coff_sect_hdr ) > remain_data_len )
+	{
+		return -1;
+	}
+
+	if( file_hdr->syms_num * sizeof( coff_sym_ent ) > remain_data_len )
+	{
+		return -1;
+	}
+	return 0;
+}
+
+int locate_coff_file_hdr( byte **data, dword *data_len )
+{
+	int i;
+	byte *__data;
+	dword __data_len;
+
+	ASSERT( NULL != data );
+	ASSERT( NULL != data_len );
+
+	__data = *data;
+	__data_len = *data_len;
+
+	for( i = 0; i < __data_len; i ++ )
+	{
+		if( i == __data_len )
+		{
+			return -1;
+		}
+
+		if( *( ( word* )__data ) != I386_COFF_FILE_MAGIC )
+		{
+			ASSERT( *__data == 0xff || *__data == 0x00 );
+
+			__data ++;
+			__data_len --;
+		}
+		else
+		{
+			break;
+		}
+	}
+
+	*data = __data;
+	*data_len = __data_len;
+	return 0;
+}
+
+int analyze_coff_file( byte *data, dword data_len, coff_analyzer *analyzer )
+{
+	int ret;
 	int i;
 	int j;
 	coff_file_hdr *file_hdr;
@@ -196,7 +291,57 @@ int analyze_coff_file( byte *data, coff_analyzer *analyzer )
 	char *ln_sym_name;
 	
 	offset = 0;
-	file_hdr = ( coff_file_hdr* )data + offset;
+
+	ret = locate_coff_file_hdr( &data, &data_len );
+	if( 0 > ret )
+	{
+		return -1;
+	}
+
+	ret = check_coff_file_sanity( data, data_len );
+
+	file_hdr = ( coff_file_hdr* )( data + offset );
+
+	if( 0 > ret )
+	{
+		if( file_hdr->sect_num = 0xd649 )
+		{
+			dword obj_file_ord;
+			obj_file_ord = HIWORD( file_hdr->syms_offset );
+
+			string = ( char* )( data + 0x0e );
+			str_table_len = data_len - 0x0e;
+			str_offset = 0;
+
+			for(; ; )
+			{
+				if( NULL != analyzer->strs_analyze )
+				{
+					sym_infos sym_info;
+					sym_info.sym_data = NULL;
+					sym_info.sym_data_len = 0;
+					sym_info.sym_name = string;
+
+					analyzer->strs_analyze( &sym_info, analyzer->context );
+				}
+
+				str_offset += strlen( string ) + sizeof( char );
+				string += strlen( string ) + sizeof( char );
+
+				assert( str_offset <= str_table_len );
+				if( str_offset == str_table_len )
+				{
+					break;
+				}
+			}
+
+			return 0;
+		}
+
+		ASSERT( FALSE );
+	}
+
+
 
 	assert( I386_COFF_FILE_MAGIC == file_hdr->magic );
 
@@ -348,10 +493,6 @@ int analyze_coff_file( byte *data, coff_analyzer *analyzer )
 
 	for(; ; )
 	{
-		string;
-		str_offset += strlen( string ) + sizeof( char );
-		string += strlen( string ) + sizeof( char );
-
 		if( NULL != analyzer->strs_analyze )
 		{
 			sym_infos sym_info;
@@ -361,6 +502,10 @@ int analyze_coff_file( byte *data, coff_analyzer *analyzer )
 
 			analyzer->strs_analyze( &sym_info, analyzer->context );
 		}
+
+		str_offset += strlen( string ) + sizeof( char );
+		string += strlen( string ) + sizeof( char );
+
 		assert( str_offset <= str_table_len );
 		if( str_offset == str_table_len )
 		{

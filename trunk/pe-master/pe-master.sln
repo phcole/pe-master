@@ -6,14 +6,8 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "pe-analyzer", "..\pe-analyzer\pe-analyzer.vcproj", "{3A8F5A21-049A-425C-8BCC-10001DD672C1}"
 	ProjectSection(ProjectDependencies) = postProject
 	EndProjectSection
-	ProjectSection(ProjectDependencies) = postProject
-	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "lib_sample", "..\lib_sample\lib_sample.vcproj", "{962D0D53-927A-4A7E-A02B-C21C0E4B28A8}"
-	ProjectSection(ProjectDependencies) = postProject
-	EndProjectSection
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "test_func_code", "..\test_func_code\test_func_code.vcproj", "{C1951D6D-1D4D-4E37-8435-E009D5DAC293}"
 	ProjectSection(ProjectDependencies) = postProject
 	EndProjectSection
 EndProject
@@ -35,10 +29,6 @@ Global
 		{962D0D53-927A-4A7E-A02B-C21C0E4B28A8}.Debug.Build.0 = Debug|Win32
 		{962D0D53-927A-4A7E-A02B-C21C0E4B28A8}.Release.ActiveCfg = Release|Win32
 		{962D0D53-927A-4A7E-A02B-C21C0E4B28A8}.Release.Build.0 = Release|Win32
-		{C1951D6D-1D4D-4E37-8435-E009D5DAC293}.Debug.ActiveCfg = Debug|Win32
-		{C1951D6D-1D4D-4E37-8435-E009D5DAC293}.Debug.Build.0 = Debug|Win32
-		{C1951D6D-1D4D-4E37-8435-E009D5DAC293}.Release.ActiveCfg = Release|Win32
-		{C1951D6D-1D4D-4E37-8435-E009D5DAC293}.Release.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 	EndGlobalSection
