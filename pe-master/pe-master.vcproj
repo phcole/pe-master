@@ -127,9 +127,6 @@
 				RelativePath=".\lib_analyze.c">
 			</File>
 			<File
-				RelativePath=".\main.c">
-			</File>
-			<File
 				RelativePath=".\pe_analyze.c">
 			</File>
 		</Filter>
@@ -154,9 +151,6 @@
 			</File>
 			<File
 				RelativePath=".\pe_analyze.h">
-			</File>
-			<File
-				RelativePath=".\resource.h">
 			</File>
 		</Filter>
 		<Filter

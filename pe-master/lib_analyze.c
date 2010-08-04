@@ -1,9 +1,52 @@
+/*
+ * Copyright 2010 JiJie Shi
+ *
+ * This file is part of PEMaster.
+ *
+ * PEMaster is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * PEMaster is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with PEMaster.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
 #include "common.h"
 #include "common_analyze.h"
 #include "lib_analyze.h"
 
 #define LIB_FILE_HEADER "!<arch>\n"
 #define STRTAB_END_SIGN "/\n"
+
+int locate_next_sect( lib_section_hdr **sect_hdr, unsigned long *cur_offset, unsigned long data_len )
+{
+	lib_section_hdr *__sect_hdr;
+	dword offset;
+
+	__sect_hdr = *sect_hdr;
+	offset = *cur_offset;
+	while( 0 != memcmp( __sect_hdr->EndOfHeader, LIB_SECT_HDR_END_SIGN, CONST_STR_LEN( LIB_SECT_HDR_END_SIGN ) ) )
+	{
+		offset += 1;
+		if( offset == data_len )
+		{
+			return -1;
+		}
+
+		__sect_hdr = ( lib_section_hdr* )( ( byte* )__sect_hdr + 1 );
+	}
+
+	*cur_offset = offset;
+	*sect_hdr = __sect_hdr;
+	return 0;
+}
 
 void convert(void * p          // 要转换的数据的指针
 					,size_t size  // 数据的长度，long为4，short为2
@@ -164,10 +207,11 @@ int read_lib_func_info( byte *data, dword data_len, coff_analyzer *analyzer )
 	offset += syms_str_offset;
 
 	section2 = ( lib_section_hdr* )( data + offset );
-	if( 0 != memcmp( section1->EndOfHeader, LIB_SECT_HDR_END_SIGN, CONST_STR_LEN( LIB_SECT_HDR_END_SIGN ) ) )
+
+	ret = locate_next_sect( &section2, &offset, data_len );
+	if( 0 > ret )
 	{
-		offset += 1;
-		section2 = ( lib_section_hdr* )data + offset;
+		return -1;
 	}
 
 	section2->Size;
@@ -223,11 +267,18 @@ int read_lib_func_info( byte *data, dword data_len, coff_analyzer *analyzer )
 	offset += section2_str_table_len;
 
 	long_name_sect = ( lib_section_hdr* )( data + offset );
-	offset += sizeof( lib_section_hdr );
+	
+	ret = locate_next_sect( &long_name_sect, &offset, data_len );
+	if( 0 > ret )
+	{
+		return -1;
+	}
 
 	clean_hdr_filled_bytes( long_name_sect );
 	if( 0 == strcmp( long_name_sect->Name, "//" ) )
 	{
+		offset += sizeof( lib_section_hdr );
+
 		long_name_str_table_len = atoi( long_name_sect->Size );
 		long_name_str_table = ( char* )( data + offset );
 		long_name_str_offset = 0;
@@ -250,10 +301,17 @@ int read_lib_func_info( byte *data, dword data_len, coff_analyzer *analyzer )
 		offset += atoi( long_name_sect->Size );
 	}
 	
+
 	for( i = 0; i < obj_sect_num; i ++ )
 	{
 		obj_file_sect = ( lib_section_hdr* )( data + offset );
 		
+		ret = locate_next_sect( &obj_file_sect, &offset, data_len );
+		if( 0 > ret )
+		{
+			return -1;
+		}
+
 		clean_hdr_filled_bytes( obj_file_sect );
 
 		if( obj_file_sect->Name[0] ==  '/' )
@@ -262,10 +320,15 @@ int read_lib_func_info( byte *data, dword data_len, coff_analyzer *analyzer )
 		}
 		else
 		{
-			*strchr( obj_file_sect->Name, '/' ) = '\0';
+			char *obj_file_name_end;
+			obj_file_name_end = strchr( obj_file_sect->Name, '/' );
+			if( NULL != obj_file_name_end )
+			{
+				*obj_file_name_end = '\0';
+			}
 		}
 
-		analyze_coff_file( ( byte* )obj_file_sect + sizeof( lib_section_hdr ), analyzer );
+		analyze_coff_file( ( byte* )obj_file_sect + sizeof( lib_section_hdr ), atoi( obj_file_sect->Size ), analyzer );
 
 		offset += sizeof( lib_section_hdr );
 		offset += atoi( obj_file_sect->Size );

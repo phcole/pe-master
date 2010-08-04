@@ -1,3 +1,23 @@
+/*
+ * Copyright 2010 JiJie Shi
+ *
+ * This file is part of PEMaster.
+ *
+ * PEMaster is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * PEMaster is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with PEMaster.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
 // pe-analyzerDlg.cpp : 实现文件
 //
 
@@ -92,7 +112,7 @@ BOOL CpeanalyzerDlg::OnInitDialog()
 	}
 
 	GetDlgItem( IDC_EDIT_FILTER )->SetWindowText( "CString" );
-	GetDlgItem( IDC_EDIT_PE_FILE_PATH )->SetWindowText( "lib_sample.lib" );
+	GetDlgItem( IDC_EDIT_PE_FILE_PATH )->SetWindowText( "C:\\WINDDK\\2600.1106\\lib\\wxp\\i386\\mfc42.lib" ); //"lib_sample.lib" );
 	// 设置此对话框的图标。当应用程序主窗口不是对话框时，框架将自动
 	//  执行此操作
 	SetIcon(m_hIcon, TRUE);			// 设置大图标
@@ -251,6 +271,11 @@ int when_find_lib_func_name( sym_infos* sym_info, void *context )
 		return -1;
 	}	
 
+	//	if( NULL != strstr( sym_info->sym_name, "/" ) )
+	//{
+	//	int kk = 0;
+	//	//return -1;
+	//}	
 	pRichEdit = ( CRichEditCtrl *)g_pDlg->GetDlgItem( IDC_EDIT_OUTPUT );
 	
 	pRichEdit->GetWindowText( strText );
@@ -277,7 +302,7 @@ dword CALLBACK thread_read_file_symbols( LPVOID lpParam )
 
 	ret_sample_func_code( &g_sym_org_data.sym_data, &g_sym_org_data.sym_data_len );
 	coff_analyzer analyzer;
-	analyzer.strs_analyze = NULL;
+	analyzer.strs_analyze = when_find_lib_func_name;
 	analyzer.code_analyze = when_func_code_finded;
 	analyzer.syms_analyze = when_find_lib_func_name;
 	analyzer.context = &g_sym_org_data;
