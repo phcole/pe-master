@@ -13,7 +13,7 @@
 #undef APSTUDIO_READONLY_SYMBOLS
 
 /////////////////////////////////////////////////////////////////////////////
-// Chinese (P.R.C.) resources
+// 中文(中华人民共和国) resources
 
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_CHS)
 #ifdef _WIN32
@@ -84,20 +84,21 @@ BEGIN
     DEFPUSHBUTTON   "确定",IDOK,178,7,50,16,WS_GROUP
 END
 
-IDD_PEANALYZER_DIALOG DIALOGEX 0, 0, 319, 224
+IDD_PEANALYZER_DIALOG DIALOGEX 0, 0, 491, 318
 STYLE DS_LOCALEDIT | DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | 
     WS_VISIBLE | WS_CAPTION | WS_SYSMENU
 EXSTYLE WS_EX_APPWINDOW
 CAPTION "pe-analyzer"
 FONT 9, "MS Shell Dlg", 0, 0, 0x1
 BEGIN
-    DEFPUSHBUTTON   "确定",IDOK,21,201,50,16
-    PUSHBUTTON      "取消",IDCANCEL,239,201,50,16
-    EDITTEXT        IDC_EDIT_PE_FILE_PATH,7,7,267,12,ES_AUTOHSCROLL
-    PUSHBUTTON      "Button1",IDC_BUTTON1,277,6,35,14
-    EDITTEXT        IDC_EDIT_FILTER,7,26,267,12,ES_AUTOHSCROLL
-    EDITTEXT        IDC_EDIT_OUTPUT,7,43,305,153,ES_MULTILINE | 
-                    ES_AUTOHSCROLL | WS_VSCROLL
+    DEFPUSHBUTTON   "确定",IDOK,381,295,50,16
+    PUSHBUTTON      "取消",IDC_STOP_ANALYZE,437,295,50,16
+    EDITTEXT        IDC_EDIT_FILE_PATH,26,5,419,12,ES_AUTOHSCROLL
+    PUSHBUTTON      "...",IDC_BUTTON_SEL_FILE,448,4,28,14
+    CONTROL         "",IDC_TREE_MAIN,"SysTreeView32",TVS_NOSCROLL | 
+                    WS_BORDER | WS_TABSTOP,3,24,178,267
+    CONTROL         "",IDC_TREE_DETAIL,"SysTreeView32",TVS_NOSCROLL | 
+                    WS_BORDER | WS_TABSTOP,184,24,303,267
 END
 
 
@@ -158,10 +159,10 @@ BEGIN
 
     IDD_PEANALYZER_DIALOG, DIALOG
     BEGIN
-        LEFTMARGIN, 7
-        RIGHTMARGIN, 312
-        TOPMARGIN, 7
-        BOTTOMMARGIN, 217
+        LEFTMARGIN, 3
+        RIGHTMARGIN, 487
+        TOPMARGIN, 4
+        BOTTOMMARGIN, 311
     END
 END
 #endif    // APSTUDIO_INVOKED
@@ -177,7 +178,7 @@ BEGIN
     IDS_ABOUTBOX            "关于 pe-analyzer(&A)..."
 END
 
-#endif    // Chinese (P.R.C.) resources
+#endif    // 中文(中华人民共和国) resources
 /////////////////////////////////////////////////////////////////////////////
 
 

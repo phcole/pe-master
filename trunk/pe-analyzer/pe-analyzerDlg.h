@@ -23,6 +23,13 @@
 
 #pragma once
 
+typedef struct __analyze_context
+{
+	char file_path[ MAX_PATH ];
+	HWND tree_main;
+	HWND tree_detail;
+	file_analyzer analyzer;
+} analyze_context;
 
 // CpeanalyzerDlg 对话框
 class CpeanalyzerDlg : public CDialog
@@ -41,6 +48,8 @@ public:
 // 实现
 protected:
 	HICON m_hIcon;
+	HANDLE m_hThread;
+	analyze_context analyzing_context;
 
 	// 生成的消息映射函数
 	virtual BOOL OnInitDialog();
@@ -51,4 +60,6 @@ protected:
 public:
 	afx_msg void OnBnClickedOk();
 	afx_msg void OnBnClickedCancel();
+	afx_msg VOID OnBnClickedButtonSelFile();
+	afx_msg void OnBnClickedStopAnalyze();
 };

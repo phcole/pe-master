@@ -20,14 +20,7 @@
 
 #include "common.h"
 #include "common_analyze.h"
-#include "coff_file_analyze.h"
-
-#define I386_COFF_FILE_MAGIC 0x014c
-#define F_RELFLG 0x0001
-#define F_EXEC 0x0002
-#define F_LNNO 0x0004
-#define F_LSYMS 0x0008
-#define F_AR32WR 0x0100
+#include "coff_file_analyzer.h"
 
 dword get_sym_data_len( coff_reloc *relocs, dword cur_reloc_index, dword reloc_count, coff_sect_hdr *hdr )
 {
@@ -266,7 +259,108 @@ int locate_coff_file_hdr( byte **data, dword *data_len )
 	return 0;
 }
 
-int analyze_coff_file( byte *data, dword data_len, coff_analyzer *analyzer )
+
+//int coff_section_ln_table_analyze( char* str_table, char* data, coff_file_hdr *file_hdr, coff_sect_hdr *sect_hdr, coff_sym_ent *sym_ent_table, coff_ln_info *ln_info_table )
+//{
+//	int j;
+//	for( j = 0; j < sect_hdr->ln_num; j ++ )
+//	{
+//		int ret;
+//		dword func_code_len;
+//		byte *func_code;
+//		coff_sym_ent *sym_ent_table;
+//		coff_sym_ent *sym_ent;
+//		char *sym_name;
+//
+//		ln_info_table[ j ].ln_no;
+//
+//		ASSERT( ln_info_table[ j ].addr_symbol < file_hdr->syms_num );
+//		sym_ent = &sym_ent_table[ ln_info_table[ j ].addr_symbol ];
+//
+//		if( 0 == sym_ent->sym_id.id.zero )
+//		{
+//			sym_name = ( byte* )str_table + sym_ent->sym_id.id.offset;
+//		}
+//		else
+//		{
+//			sym_name = sym_ent->sym_id.name;
+//		}
+//
+//		if( sect_hdr->flags & STYP_TEXT )
+//		{
+//			ret = find_func_code_start( data + sect_hdr->sect_offset,sect_hdr->size, j, &func_code, &func_code_len );
+//			if( 0 > ret )
+//			{
+//				ASSERT( FALSE );
+//				continue;
+//			}
+//
+//			if( NULL != analyzer->code_analyze )
+//			{
+//				code_infos code_info;
+//				code_info.func_code = func_code;
+//				code_info.func_code_len = func_code_len;
+//				code_info.func_name = sym_name;
+//
+//				analyzer->code_analyze( &code_info, analyzer->context );
+//			}
+//		}
+//	}
+//	return 0;
+//}
+
+int coff_section_relocs_analyze( coff_sect_hdr *sect_hdr, byte data, dword data_len, file_analyzer *analyzer )
+{
+//	int i;
+//	int j;
+//
+//	byte *sym_data;
+//
+//	ASSERT( NULL != sect_hdr );
+//
+//	for( j = 0; j < sect_hdr->rel_offset_num; j ++ )
+//	{
+//#define RELOC_ADDR32 6
+//#define RELOC_REL32 20 
+//
+//		sym_data = ( data + sect_relocs[ j ].ulAddr + sect_hdr->sect_offset );
+//
+//		sym_data_len = get_sym_data_len( sect_relocs, j, sect_hdr->rel_offset_num, sect_hdr );
+//
+//		ASSERT( sect_relocs[ j ].ulSymbol < file_hdr->syms_num );
+//
+//		sym_ent = &sym_ent_table[ sect_relocs[ j ].ulSymbol ];
+//
+//		if( 0 == sym_ent->sym_id.id.zero )
+//		{
+//			sym_name = ( byte* )str_table + sym_ent->sym_id.id.offset;
+//		}
+//		else
+//		{
+//			sym_name = sym_ent->sym_id.name;
+//		}
+//
+//		if( NULL != analyzer )
+//		{
+//			if( NULL != analyzer->syms_analyze )
+//			{
+//				sym_infos sym_info;
+//				sym_info.sym_data = sym_data;
+//				sym_info.sym_data_len = sym_data_len;
+//				sym_info.sym_name = sym_name;
+//
+//				analyzer->syms_analyze( &sym_info, analyzer->context );
+//			}
+//		}
+//		sect_relocs->usType;
+//
+//		sym_ent->aux_num == 1; //next sym is the aux info of cur sym.the cont of it is affected with type of the data in it.
+//	}
+
+	return 0;
+}
+
+int analyze_coff_file( byte *data, dword data_len, file_analyzer *analyzer )
 {
 	int ret;
 	int i;
@@ -313,42 +407,26 @@ int analyze_coff_file( byte *data, dword data_len, coff_analyzer *analyzer )
 			str_table_len = data_len - 0x0e;
 			str_offset = 0;
 
-			for(; ; )
-			{
-				if( NULL != analyzer->strs_analyze )
-				{
-					sym_infos sym_info;
-					sym_info.sym_data = NULL;
-					sym_info.sym_data_len = 0;
-					sym_info.sym_name = string;
-
-					analyzer->strs_analyze( &sym_info, analyzer->context );
-				}
-
-				str_offset += strlen( string ) + sizeof( char );
-				string += strlen( string ) + sizeof( char );
-
-				assert( str_offset <= str_table_len );
-				if( str_offset == str_table_len )
-				{
-					break;
-				}
-			}
-
 			return 0;
 		}
 
 		ASSERT( FALSE );
 	}
 
-
-
 	assert( I386_COFF_FILE_MAGIC == file_hdr->magic );
 
-	file_hdr->time;
-	file_hdr->sect_num;
-	file_hdr->syms_num;
-	file_hdr->syms_offset;
+
+	if( NULL != analyzer->struct_analyze )
+	{
+		struct_infos info;
+
+		info.struct_data = ( byte* )file_hdr;
+		info.struct_id = STRUCT_TYPE_COFF_FILE_HEADER;
+		info.struct_name = "coff file header";
+		info.struct_context = data;
+
+		analyzer->struct_analyze( &info, analyzer->context );
+	}
 
 	sym_ent_table = data + file_hdr->syms_offset;
 
@@ -359,13 +437,19 @@ int analyze_coff_file( byte *data, dword data_len, coff_analyzer *analyzer )
 	opt_hdr_len = file_hdr->opt_hdr_size;
 	if( 28 == opt_hdr_len )
 	{
-		coff_opt_hdr28 *opt_hdr28;
-		opt_hdr28 = ( coff_opt_hdr28* )( data + offset );
-		opt_hdr28->magic == 0x010b; //exe
-		opt_hdr28->magic == 0x0107; //rom 
-		opt_hdr28->entry;
-		opt_hdr28->version;
-		opt_hdr28->text_base;
+		coff_opt_hdr28 *opt_hdr;
+		opt_hdr = ( coff_opt_hdr28* )( data + offset );
+		if( NULL != analyzer->struct_analyze )
+		{
+			struct_infos info;
+
+			info.struct_data = ( byte* )opt_hdr;
+			info.struct_id = STRUCT_TYPE_COFF_OPTIONAL_28_HEADER;
+			info.struct_name = "coff optional 28 header";
+			info.struct_context = data;
+
+			analyzer->struct_analyze( &info, analyzer->context );
+		}
 	}
 
 	offset += opt_hdr_len;
@@ -379,111 +463,23 @@ int analyze_coff_file( byte *data, dword data_len, coff_analyzer *analyzer )
 		{
 			int k = 10;
 		}
-#define STYP_TEXT 0x0020
-#define STYP_DATA 0x0040
-#define STYP_BSS 0x0080
-		sect_hdr->flags;
-		sect_hdr->ln_table_offset;
+
+		if( NULL != analyzer->struct_analyze )
+		{
+			struct_infos info;
+
+			info.struct_data = ( byte* )sect_hdr;
+			info.struct_id = STRUCT_TYPE_COFF_SECTION_HEADER;
+			info.struct_name = "coff section header";
+			info.struct_context = data;
+
+			analyzer->struct_analyze( &info, analyzer->context );
+		}
+
 		sect_relocs = ( coff_reloc* )( data + sect_hdr->sect_rel_offset );
 		ln_info_table = ( coff_ln_info* )( data + sect_hdr->ln_table_offset );
 
-		for( j = 0; j < sect_hdr->ln_num; j ++ )
-		{
-			int ret;
-			dword func_code_len;
-			byte *func_code;
-			ln_info_table[ j ].ln_no;
 
-			ASSERT( ln_info_table[ j ].addr_symbol < file_hdr->syms_num );
-			sym_ent = &sym_ent_table[ ln_info_table[ j ].addr_symbol ];
-
-			if( 0 == sym_ent->sym_id.id.zero )
-			{
-				sym_name = ( byte* )str_table + sym_ent->sym_id.id.offset;
-			}
-			else
-			{
-				sym_name = sym_ent->sym_id.name;
-			}
-
-			if( sect_hdr->flags & STYP_TEXT )
-			{
-				ret = find_func_code_start( data + sect_hdr->sect_offset,sect_hdr->size, j, &func_code, &func_code_len );
-				if( 0 > ret )
-				{
-					ASSERT( FALSE );
-					continue;
-				}
-
-				if( NULL != analyzer->code_analyze )
-				{
-					code_infos code_info;
-					code_info.func_code = func_code;
-					code_info.func_code_len = func_code_len;
-					code_info.func_name = sym_name;
-
-					analyzer->code_analyze( &code_info, analyzer->context );
-				}
-			}
-		}
-
-		for( j = 0; j < sect_hdr->rel_offset_num; j ++ )
-		{
-#define RELOC_ADDR32 6
-#define RELOC_REL32 20 
-
-			sym_data = ( data + sect_relocs[ j ].ulAddr + sect_hdr->sect_offset );
-			
-			sym_data_len = get_sym_data_len( sect_relocs, j, sect_hdr->rel_offset_num, sect_hdr );
-
-			ASSERT( sect_relocs[ j ].ulSymbol < file_hdr->syms_num );
-
-			sym_ent = &sym_ent_table[ sect_relocs[ j ].ulSymbol ];
-
-			if( 0 == sym_ent->sym_id.id.zero )
-			{
-				sym_name = ( byte* )str_table + sym_ent->sym_id.id.offset;
-			}
-			else
-			{
-				sym_name = sym_ent->sym_id.name;
-			}
-
-			if( NULL != analyzer )
-			{
-				if( NULL != analyzer->syms_analyze )
-				{
-					sym_infos sym_info;
-					sym_info.sym_data = sym_data;
-					sym_info.sym_data_len = sym_data_len;
-					sym_info.sym_name = sym_name;
-
-					analyzer->syms_analyze( &sym_info, analyzer->context );
-				}
-			}
-			sect_relocs->usType;
-	
-#define SYM_PTR_TYPE 0x01
-#define SYM_FUNC_TYPE 0x02 
-#define SYM_ARRAY_TYPE 0x03
-#define SYM_NONE_TYPE 0x00
-
-
-#define SYM_NONE_STORE_TYPE 0
-#define SYM_AUTOMATIC_STORE_TYPE 1
-#define SYM_EXTERNAL_STORE_TYPE 2
-#define SYM_STATIC_STORE_TYPE 3 //offset 0 is the section name
-#define SYM_REGISTER_STORE_TYPE 4
-#define SYM_MEMBER_OF_STRUCT_STORE_TYPE 8
-#define SYM_STRUCT_TAG_STORE_TYPE 10
-#define SYM_MEMBER_OF_UNION_STORE_TYPE 11 //value is order of symbol in the enum
-#define SYM_UNION_TAG_STORE_TYPE 12
-#define SYM_TYPE_DEFINITION_STORE_TYPE 13
-#define SYM_FUNCTION_STORE_TYPE 13
-#define SYM_FILE_STORE_TYPE 13
-
-			sym_ent->aux_num == 1; //next sym is the aux info of cur sym.the cont of it is affected with type of the data in it.
-		}
 		offset += sizeof( coff_sect_hdr );
 	}
 
@@ -512,4 +508,6 @@ int analyze_coff_file( byte *data, dword data_len, coff_analyzer *analyzer )
 			break;
 		}
 	}
+
+	return 0;
 }

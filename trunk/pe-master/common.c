@@ -20,31 +20,42 @@
 
 #include "common.h"
 
-int mem_submem(byte* pSubMem, int nSubMemLen, byte* pMem, int nMemLen)
+void littelendian2bigendian( void * p, size_t size )
 {
-	int nSubLen;
-	byte* pSrcStr;
-	int nEndIndex;
-	byte bIsSame;
+	int i;
+	char * buf = ( char* )p;
+	char temp;
+	for ( i=0;i < size / 2; i++ ) {
+		temp = buf[ i ];
+		buf[ i ] = buf[ size - i - 1 ];
+		buf[ size - i - 1 ] = temp;
+	}
+} 
+
+int mem_submem( byte* target_cont, int target_cont_len, byte* src_mem, int src_mem_len)
+{
+	int __target_len;
+	byte* __src_mem;
+	int end_index;
+	byte is_same;
 	int i, j;
 
-	if(nMemLen < nSubMemLen)
+	if( src_mem_len < target_cont_len )
 		return -1;
 
-	nSubLen = nSubMemLen;
-	pSrcStr = pMem;
+	__target_len = target_cont_len;
+	__src_mem = src_mem;
 
-	nEndIndex = nMemLen - nSubMemLen + 1;
-	bIsSame;
+	end_index = src_mem_len - target_cont_len + 1;
 
-	for(i = 0; i < nEndIndex; i ++)
+	for(i = 0; i < end_index; i ++)
 	{
-		bIsSame = TRUE;
-		for( j = 0; j < nSubMemLen; j++)
+		is_same = TRUE;
+		for( j = 0; j < target_cont_len; j++ )
 		{
-			if(pSubMem[j] != pSrcStr[i + j])
+			if(target_cont[j] != __src_mem[i + j])
 			{
-				bIsSame = FALSE;
+				is_same = FALSE;
 				break;
 			}
 			else
@@ -53,10 +64,47 @@ int mem_submem(byte* pSubMem, int nSubMemLen, byte* pMem, int nMemLen)
 			}
 		}
 
-		if(bIsSame)
+		if( is_same )
 			return i;
 	}
 	return -1;
+}
+
+int write_to_new_file( char *file_path, char *file_name, byte *data, dword data_len )
+{
+	int ret = 0;
+	HANDLE hfile;
+	dword writed;
+	char new_file_name[ MAX_PATH ];
+
+	ASSERT( NULL != file_name );
+	ASSERT( NULL != data );
+	ASSERT( NULL != data_len );
+
+	strcpy( new_file_name, file_path );
+	strcat( new_file_name, "\\" );
+	strcat( new_file_name, file_name );
+
+	hfile = CreateFile( new_file_name, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_NEW, 0, NULL );
+	if( INVALID_HANDLE_VALUE == hfile )
+	{
+		return -1;
+	}
+
+	ret = WriteFile( hfile, data, data_len, &writed, NULL );
+	if( FALSE == ret || writed != data_len )
+	{
+		ret = -1;
+		goto __error;
+	}
+
+__error:
+	if( INVALID_HANDLE_VALUE != hfile )
+	{
+		CloseHandle( hfile );
+	}
+
+	return ret;
 }
 
 int read_all_file_data( char *file_name, byte **data, dword *data_len )
@@ -119,4 +167,32 @@ __return:
 int release_file_data( byte *data )
 {
 	free( data );
+}
+
+void dump_mem( void *mem, int size )
+{
+	unsigned char str[20];
+	unsigned char *m = mem;
+	int i,j;
+
+	for (j = 0; j < size / 8; j++)
+	{
+		memset( str, 0, sizeof( str ) );
+		for (i = 0; i < 8; i++) 
+		{
+			if (m[i] > ' ' && m[i] <= '~')
+			{
+				str[i] = m[i];
+			}
+			else
+			{
+				str[i] = '.';
+			}
+		}
+
+		sprintf( "0x%08p  %02x %02x %02x %02x %02x %02x %02x %02x  %s\n",
+			m, m[0], m[1], m[2], m[3], m[4], m[5], m[6], m[7], str);
+
+		m+=8;
+	}
 }

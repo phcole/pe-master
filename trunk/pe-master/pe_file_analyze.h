@@ -17,18 +17,20 @@
  * along with PEMaster.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-#ifndef __PE_ANALYZE_H__
-#define __PE_ANALYZE_H__
+#ifndef __PE_FILE_ANALYZER_H__
+#define __PE_FILE_ANALYZER_H__
 
+#define PE_HEADER_SIGN 0x4d5a
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-INT32 analyze_pe_file( byte *data, dword data_len, coff_analyzer *analyzer );
+int32 check_pe_file_type( byte *data, dword data_len );
+INT32 analyze_pe_file( byte *data, dword data_len, file_analyzer *analyzer );
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif //__PE_ANALYZE_H__
+#endif //__PE_FILE_ANALYZER_H__

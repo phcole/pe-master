@@ -18,48 +18,55 @@
  *
  */
 
-#ifndef __LIB_ANALYZE_H__
-#define __LIB_ANALYZE_H__
+#ifndef __LIB_FILE_ANALYZER_H__
+#define __LIB_FILE_ANALYZER_H__
+
+#include "coff_file_analyzer.h"
 
 #define LIB_SECT_HDR_END_SIGN "`\n"
+
+#define STRUCT_TYPE_COFF_SECTION1 0x00020001
+#define STRUCT_TYPE_COFF_SECTION2 0x00020002
+#define STRUCT_TYPE_COFF_SECTION_LONGNAME 0x00020003
+#define STRUCT_TYPE_COFF_SECTION_OBJ_FILE 0x00020004
+
 typedef struct __lib_section_hdr
 {
-	char Name[16];      // 名称
-	char Time[12];      // 时间
-	char UserID[6];     // 用户ID
-	char GroupID[6];    // 组ID
-	char Mode[8];       // 模式
-	char Size[10];      // 长度
-	char EndOfHeader[2];// 结束符
+	char name[16];
+	char time[12];
+	char user_id[6];
+	char group_id[6];
+	char mode[8];
+	char size[10];
+	char end_of_header[2];
 
 } lib_section_hdr;
 
 typedef struct __section1_data{
-	unsigned long SymbolNum;         // 库中符号的数量
-	unsigned long *SymbolOffset;   // 符号所在目标节的偏移
-	char *StrTable;                // 符号名称字符串表
+	unsigned long SymbolNum;
+	unsigned long *SymbolOffset;
+	char *StrTable;
 } section1_data;
 
 typedef struct __section2_data{
-	unsigned long ObjNum;        // Obj Sec的数量
-	unsigned long *ObjOffset;  // 每一个Obj Sec的偏移
-	unsigned long SymbolNum;     // 库中符号的数量
-	unsigned short *SymbolIdx; // 符号在ObjOffset表中的索引
-	char *StrTable;            // 符号名称字符串表
+	unsigned long ObjNum;
+	unsigned long *ObjOffset;
+	unsigned long SymbolNum;
+	unsigned short *SymbolIdx;
+	char *StrTable;
 } section2_data;
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-void convert(void * p, size_t size );
 int find_section_2( byte *data );
-int check_lib_file_header( byte *data, dword data_len );
+int callback check_lib_file_type( byte *data, dword data_len );
 int read_obj_section( lib_section_hdr* sect, byte *data );
-int read_lib_func_info( byte *data, dword data_len, coff_analyzer *analyzer );
+int analyze_lib_file( byte *data, dword data_len, file_analyzer *analyzer );
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif
+#endif //__LIB_FILE_ANALYZER_H__

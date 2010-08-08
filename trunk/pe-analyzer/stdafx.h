@@ -28,6 +28,8 @@
 #define VC_EXTRALEAN		// 从 Windows 标头中排除不常使用的资料
 #endif
 
+#define _WIN32_IE 0x0500
+
 // 如果您必须使用下列所指定的平台之前的平台，则修改下面的定义。
 // 有关不同平台的相应值的最新信息，请参考 MSDN。
 #ifndef WINVER				// 允许使用 Windows 95 和 Windows NT 4 或更高版本的特定功能。
@@ -59,4 +61,11 @@
 #ifndef _AFX_NO_AFXCMN_SUPPORT
 #include <afxcmn.h>			// Windows 公共控件的 MFC 支持
 #endif // _AFX_NO_AFXCMN_SUPPORT
+
+#include "common.h"
+#include "common_analyze.h"
+#include "file_analyzer.h"
+#include "lib_file_analyzer.h"
+#include "pe_file_analyzer.h"
+#include "coff_file_analyzer.h"
 
