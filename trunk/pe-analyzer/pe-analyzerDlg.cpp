@@ -36,6 +36,11 @@
 #define MAX_FILTER_LEN 1024
 CHAR g_szFilter[ MAX_FILTER_LEN ] = { 0 };
 
+#define FIND_SUB_TREE_TRAVERSE 0x01
+#define LIB_FILE_TITLE "LIB FILE"
+#define LIB_LONGNAME_SECTION_TITLE "LONG NAME SECTION"
+#define LIB_OBJ_FILE_SECTION_TITLE "OBJ FILE SECTION "
+
 typedef struct __sym_org_data
 {
 	byte *sym_data;
@@ -118,25 +123,103 @@ int32 init_wnd_feature( CpeanalyzerDlg *dlg )
 	::SendMessage( tree_main, TVM_SETINSERTMARKCOLOR, 0, 0x00ffffe0 );
 
 	return 0;
-};
+}
 
+HTREEITEM find_sub_tree_in_tree( HWND tree_main, HTREEITEM tree_item, char *find_str, dword flags )
+{
+#define MAX_TREE_ITEM_TITLE_LEN 512
+	int ret;
+	HTREEITEM sub_tree;
+	HTREEITEM sib_tree;
+	HTREEITEM ret_tree;
+	TVITEM tv_item;
+	char geted_str[ MAX_TREE_ITEM_TITLE_LEN ];
 
-HWND insert_text_in_tree( HWND tree, const char *str_insert )
+	ASSERT( NULL != find_str );
+	ASSERT( NULL != tree_item );
+
+	if( TVI_ROOT != tree_item )
+	{
+		memset( &tv_item, 0, sizeof( tv_item ) );
+		tv_item.mask = TVIF_TEXT;
+		tv_item.pszText = geted_str;
+		tv_item.cchTextMax = MAX_TREE_ITEM_TITLE_LEN;
+		tv_item.hItem = tree_item;
+		ret = TreeView_GetItem( tree_main, &tv_item );
+		if( FALSE == ret )
+		{
+			return NULL;
+		}
+
+		if( 0 == strcmp( tv_item.pszText, find_str ) )
+		{
+			return sub_tree;
+		}
+	}
+
+	sub_tree = TreeView_GetChild( tree_main, tree_item );
+	if( NULL == sub_tree )
+	{
+		return NULL;
+	}
+
+	memset( &tv_item, 0, sizeof( tv_item ) );
+	tv_item.mask = TVIF_TEXT;
+	tv_item.pszText = geted_str;
+	tv_item.cchTextMax = MAX_TREE_ITEM_TITLE_LEN;
+	tv_item.hItem = sub_tree;
+	ret = TreeView_GetItem( tree_main, &tv_item );
+	if( FALSE == ret )
+	{
+		return NULL;
+	}
+
+	if( 0 == strcmp( tv_item.pszText, find_str ) )
+	{
+		return sub_tree;
+	}
+
+	if( flags & FIND_SUB_TREE_TRAVERSE )
+	{
+		ret_tree = find_sub_tree_in_tree( tree_main, sub_tree, find_str, flags );
+		if( NULL != ret_tree )
+		{
+			return ret_tree;
+		}
+	}
+
+	sib_tree = TreeView_GetNextSibling( tree_main, sub_tree );
+	if( NULL == sib_tree )
+	{
+		return NULL;
+	}
+
+	ret_tree = find_sub_tree_in_tree( tree_main, sib_tree, find_str, flags );
+	if( NULL != ret_tree )
+	{
+		return ret_tree;
+	}
+
+	return NULL;
+}
+
+HTREEITEM insert_text_in_tree( HWND tree, HTREEITEM tree_item, const char *str_insert, byte *data )
 {
 	TV_INSERTSTRUCT tvis;
-	HWND sub_tree;
+	HTREEITEM sub_tree;
 
 	ASSERT( NULL != tree );
 	ASSERT( NULL != str_insert );
 
 	tvis.hParent = NULL;
-	tvis.hInsertAfter = TVI_ROOT;
+	tvis.hInsertAfter = tree_item;
 	tvis.item.mask = TVIF_TEXT | TVIF_IMAGE | TVIF_SELECTEDIMAGE;
 	tvis.item.pszText = ( char* )str_insert;
 	tvis.item.iImage = -1;
 	tvis.item.iSelectedImage = -1;
+	tvis.item.lParam = ( DWORD )data;
 
-	sub_tree = ( HWND )SendMessage( tree, TVM_INSERTITEM, 0, ( LPARAM )&tvis );
+	sub_tree = ( HTREEITEM )SendMessage( tree, TVM_INSERTITEM, 0, ( LPARAM )&tvis );
 	return sub_tree;
 }
 
@@ -168,6 +251,8 @@ BOOL CpeanalyzerDlg::OnInitDialog()
 	//  执行此操作
 	SetIcon(m_hIcon, TRUE);			// 设置大图标
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
+
+	init_wnd_feature( this );
 
 	g_pDlg = this;
 	// TODO: 在此添加额外的初始化代码
@@ -297,73 +382,50 @@ int32 analyze_pe_dos_header( PIMAGE_DOS_HEADER dos_hdr, analyze_context *context
 #define MAX_PE_OPTIONAL_DESC_LEN 4096
 int32 analyze_pe_optional_hdr( PIMAGE_OPTIONAL_HEADER option_hdr, analyze_context *context )
 {
-	HWND tree_main;
-	HWND tree_detail;
-	HWND sub_tree;
-	HWND ret;
+	//HWND tree_main;
+	//HWND tree_detail;
+	//HWND sub_tree;
+	//HWND ret;
 
-	char opt_hdr_desc[ MAX_PE_OPTIONAL_DESC_LEN ];
-	ASSERT( NULL != option_hdr );
-	ASSERT( NULL != context );
-	ASSERT( NULL != context->tree_main );
-	ASSERT( NULL != context->tree_detail );
-	
-	tree_main = context->tree_main;
-	tree_detail = context->tree_detail;
+	//char opt_hdr_desc[ MAX_PE_OPTIONAL_DESC_LEN ];
+	//ASSERT( NULL != option_hdr );
+	//ASSERT( NULL != context );
+	//ASSERT( NULL != context->tree_main );
+	//ASSERT( NULL != context->tree_detail );
+	//
+	//tree_main = context->tree_main;
+	//tree_detail = context->tree_detail;
 
-	option_hdr->AddressOfEntryPoint;
+	//option_hdr->AddressOfEntryPoint;
 
-	sub_tree = insert_text_in_tree( tree_main, "PE Optional Header" );
+	//sub_tree = insert_text_in_tree( tree_main, "PE Optional Header", ( byte* )option_hdr );
 
-	printf( opt_hdr_desc, "PE Image base : 0x%0.8x", option_hdr->ImageBase );
-	ret = insert_text_in_tree( sub_tree, opt_hdr_desc );
+	//printf( opt_hdr_desc, "PE Image base : 0x%0.8x", option_hdr->ImageBase );
+	//ret = insert_text_in_tree( sub_tree, opt_hdr_desc, NULL );
 
-	printf( opt_hdr_desc, "PE optional header signature: 0x%0.4x", option_hdr->Magic );
-	ret = insert_text_in_tree( sub_tree, opt_hdr_desc );
+	//printf( opt_hdr_desc, "PE optional header signature: 0x%0.4x", option_hdr->Magic );
+	//ret = insert_text_in_tree( sub_tree, opt_hdr_desc, NULL );
 
-	printf( opt_hdr_desc, "PE Section alignment: 0x%0.8x", option_hdr->SectionAlignment );
-	ret = insert_text_in_tree( sub_tree, opt_hdr_desc );
+	//printf( opt_hdr_desc, "PE Section alignment: 0x%0.8x", option_hdr->SectionAlignment );
+	//ret = insert_text_in_tree( sub_tree, opt_hdr_desc, NULL );
 
-	printf( opt_hdr_desc, "PE Section alignment: 0x%0.8x", option_hdr->FileAlignment );
-	ret = insert_text_in_tree( sub_tree, opt_hdr_desc );
+	//printf( opt_hdr_desc, "PE Section alignment: 0x%0.8x", option_hdr->FileAlignment );
+	//ret = insert_text_in_tree( sub_tree, opt_hdr_desc, NULL );
 
-	printf( opt_hdr_desc, "PE Minor subsytem version: 0x%0.8x", option_hdr->MinorSubsystemVersion );
-	ret = insert_text_in_tree( sub_tree, opt_hdr_desc );
+	//printf( opt_hdr_desc, "PE Minor subsytem version: 0x%0.8x", option_hdr->MinorSubsystemVersion );
+	//ret = insert_text_in_tree( sub_tree, opt_hdr_desc, NULL );
 
-	printf( opt_hdr_desc, "PE Minor subsytem version: 0x%0.8x", option_hdr->MinorSubsystemVersion );
-	ret = insert_text_in_tree( sub_tree, opt_hdr_desc );
+	//printf( opt_hdr_desc, "PE Minor subsytem version: 0x%0.8x", option_hdr->MinorSubsystemVersion );
+	//ret = insert_text_in_tree( sub_tree, opt_hdr_desc, NULL );
 
-	option_hdr->SizeOfImage;
-	option_hdr->SizeOfHeaders;
-	option_hdr->CheckSum; //CheckSumMappedFile()
-	option_hdr->SizeOfStackReserve;
-	option_hdr->SizeOfStackCommit;
-	option_hdr->SizeOfHeapReserve;
-	option_hdr->SizeOfHeapCommit;
+	//option_hdr->SizeOfImage;
+	//option_hdr->SizeOfHeaders;
+	//option_hdr->CheckSum; //CheckSumMappedFile()
+	//option_hdr->SizeOfStackReserve;
+	//option_hdr->SizeOfStackCommit;
+	//option_hdr->SizeOfHeapReserve;
+	//option_hdr->SizeOfHeapCommit;
 	return 0;
-}
-
-int32 open_file( HWND owner, char *seled_file_name, dword buff_len )
-{
-	
-	ASSERT( NULL != seled_file_name &&
-		0 < buff_len );
-
-	int32 ret;
-	OPENFILENAME ofn;
-	ZeroMemory(&ofn, sizeof(ofn));
-	ofn.lStructSize = sizeof(OPENFILENAME);
-	ofn.hwndOwner = owner;
-	ofn.lpstrFile = seled_file_name;
-	ofn.lpstrFile[ 0 ] = '\0';
-	ofn.lpstrTitle = "select one file";
-	ofn.nMaxFile = buff_len;
-	ofn.lpstrFilter = "pe file (*.exe;*.dll)\0*.exe;*.dll\0coff file (*.lib;*.obj)\0*.lib;*.obj\0all file (*.*)\0*.*\0";
-	ofn.lpstrInitialDir = NULL;
-	ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
-	ret = GetOpenFileName( &ofn );
-
-	return ret == 0 ? -1 : 0;
 }
 
 int32 analyze_obj_file( obj_file_info *info, void *context )
@@ -394,19 +456,78 @@ int32 analyze_coff_section_hdr( coff_sect_hdr *file_hdr, analyze_context *costex
 	return 0;
 }
 
+//
+//typedef struct __coff_file_hdr{
+//	unsigned short magic;
+//	unsigned short sect_num;
+//	unsigned long  time;
+//	unsigned long  syms_offset;
+//	unsigned long  syms_num;
+//	unsigned short opt_hdr_size;
+//	unsigned short flags;
+//} coff_file_hdr;
+
 int32 analyze_coff_file_hdr( coff_file_hdr *file_hdr, analyze_context *costext )
 {
 	char desc[ MAX_DESC_INFO_LEN ];
 
 	HWND tree_main;
-	HWND tree_detail;
-	HWND tree_sub;
+	HTREEITEM tree_sub;
+	HTREEITEM tree_target;
+	HTREEITEM ret;
 
 	tree_main = costext->tree_main;
 
-	sprintf( desc, "%d", file_hdr->opt_hdr_size );
+	tree_target = find_sub_tree_in_tree( tree_main, TVI_ROOT, LIB_FILE_TITLE, NULL );
+	if( NULL == tree_target )
+	{
+		tree_sub = insert_text_in_tree( tree_main, TVI_ROOT, "COFF FILE", NULL );
+		if( NULL == tree_sub )
+		{
+			return -1;
+		}
 
-	tree_sub = insert_text_in_tree( tree_main, "COFF FILE HEADER" );
+		tree_target = tree_sub;
+	}
+
+	ret = insert_text_in_tree( tree_main, tree_target, "COFF File Header", ( byte* )file_hdr );
+	if( NULL == ret )
+	{
+		return -1;
+	}
+
+	//sprintf( desc, "Optional header size: %d", file_hdr->opt_hdr_size );
+	//insert_text_in_tree( tree_sub, desc );
+
+	//sprintf( desc, "Optional header size: %d", file_hdr->opt_hdr_size );
+	//insert_text_in_tree( tree_sub, desc );
+
+	//sprintf( desc, "Optional header size: %d", file_hdr->opt_hdr_size );
+	//insert_text_in_tree( tree_sub, desc );
+
+	//sprintf( desc
+
+	return 0;
+}
+
+
+int32 analyze_lib_section2( coff_sect_hdr *section2, analyze_context *costext )
+{ 
+	char desc[ MAX_DESC_INFO_LEN ];
+
+	HWND tree_main;
+	HTREEITEM tree_target;
+	HTREEITEM tree_sub;
+
+	tree_main = costext->tree_main;
+
+	tree_target = find_sub_tree_in_tree( tree_main, TVI_ROOT, LIB_FILE_TITLE, NULL );
+	if( NULL == tree_target )
+	{
+		return -1;
+	}
+	
+	tree_sub = insert_text_in_tree( tree_main, tree_target, section2->name, ( byte* )section2 );
 
 	if( NULL == tree_sub )
 	{
@@ -416,18 +537,51 @@ int32 analyze_coff_file_hdr( coff_file_hdr *file_hdr, analyze_context *costext )
 	return 0;
 }
 
-int32 analyze_coff_section2( coff_sect_hdr *section1, analyze_context *costext )
+int32 analyze_lib_section_longname( coff_sect_hdr *section, analyze_context *costext )
 {
 
 	char desc[ MAX_DESC_INFO_LEN ];
 
 	HWND tree_main;
-	HWND tree_detail;
-	HWND tree_sub;
+	HTREEITEM tree_target;
+	HTREEITEM tree_sub;
 
 	tree_main = costext->tree_main;
 
-	tree_sub = insert_text_in_tree( tree_main, section1->name );
+	tree_target = find_sub_tree_in_tree( tree_main, TVI_ROOT, LIB_FILE_TITLE, 0 );
+	if( NULL == tree_target )
+	{
+		return -1;
+	}
+
+	tree_sub = insert_text_in_tree( tree_main, tree_target, LIB_LONGNAME_SECTION_TITLE, ( byte* )section );
+	if( NULL == tree_sub )
+	{
+		return -1;
+	}
+
+	return 0;
+}
+
+int32 analyze_lib_section_obj_file( coff_sect_hdr *obj_file_sect, dword index, analyze_context *costext )
+{
+
+	char desc[ MAX_DESC_INFO_LEN ];
+
+	HWND tree_main;
+	HTREEITEM tree_target;
+	HTREEITEM tree_sub;
+
+	tree_main = costext->tree_main;
+
+	tree_target = find_sub_tree_in_tree( tree_main, TVI_ROOT, LIB_FILE_TITLE, 0 );
+	if( NULL == tree_target )
+	{
+		return -1;
+	}
+
+	sprintf( desc, "%s%d", LIB_OBJ_FILE_SECTION_TITLE, index );
+	tree_sub = insert_text_in_tree( tree_main, tree_target, desc, ( byte* )obj_file_sect );
 
 	if( NULL == tree_sub )
 	{
@@ -437,66 +591,31 @@ int32 analyze_coff_section2( coff_sect_hdr *section1, analyze_context *costext )
 	return 0;
 }
 
-int32 analyze_coff_section_longname( coff_sect_hdr *section1, analyze_context *costext )
+int32 analyze_lib_section1( coff_sect_hdr *section1, analyze_context *costext )
 {
 
 	char desc[ MAX_DESC_INFO_LEN ];
 
 	HWND tree_main;
-	HWND tree_detail;
-	HWND tree_sub;
+	HTREEITEM tree_target;
+	HTREEITEM tree_sub;
+	HTREEITEM tree_ret;
 
 	tree_main = costext->tree_main;
 
-	tree_sub = insert_text_in_tree( tree_main, section1->name );
+	tree_sub = insert_text_in_tree( tree_main, TVI_ROOT, LIB_FILE_TITLE, NULL );
 
 	if( NULL == tree_sub )
 	{
 		return -1;
 	}
 
-	return 0;
-}
+	tree_ret = insert_text_in_tree( tree_main, tree_sub, LIB_FILE_TITLE, ( byte* )section1 );
 
-int32 analyze_coff_section_obj_file( coff_sect_hdr *section1, analyze_context *costext )
-{
-
-	char desc[ MAX_DESC_INFO_LEN ];
-
-	HWND tree_main;
-	HWND tree_detail;
-	HWND tree_sub;
-
-	tree_main = costext->tree_main;
-
-	tree_sub = insert_text_in_tree( tree_main, section1->name );
-
-	if( NULL == tree_sub )
+	if( NULL == tree_ret )
 	{
 		return -1;
 	}
-
-	return 0;
-}
-
-int32 analyze_coff_section1( coff_sect_hdr *section1, analyze_context *costext )
-{
-
-	char desc[ MAX_DESC_INFO_LEN ];
-
-	HWND tree_main;
-	HWND tree_detail;
-	HWND tree_sub;
-
-	tree_main = costext->tree_main;
-
-	tree_sub = insert_text_in_tree( tree_main, section1->name );
-
-	if( NULL == tree_sub )
-	{
-		return -1;
-	}
-
 	return 0;
 }
 
@@ -527,17 +646,17 @@ int32 analzye_all_struct( struct_infos *struct_info, void *context )
 	case STRUCT_TYPE_PE_OPTIONAL_HEADER:
 		//ret = analyze_pe_optional_hdr( ( PIMAGE_OPTIONAL_HEADER )__struct_info->struct_data, __context );
 		break;
-	case STRUCT_TYPE_COFF_SECTION1:
-		ret = analyze_coff_section1( ( coff_sect_hdr* )__struct_info->struct_data, __context );
+	case STRUCT_TYPE_LIB_SECTION1:
+		ret = analyze_lib_section1( ( coff_sect_hdr* )__struct_info->struct_data, __context );
 		break;
-	case STRUCT_TYPE_COFF_SECTION2:
-		ret = analyze_coff_section2( ( coff_sect_hdr* )__struct_info->struct_data, __context );
+	case STRUCT_TYPE_LIB_SECTION2:
+		ret = analyze_lib_section2( ( coff_sect_hdr* )__struct_info->struct_data, __context );
 		break;
-	case STRUCT_TYPE_COFF_SECTION_LONGNAME:
-		ret = analyze_coff_section_longname( ( coff_sect_hdr* )__struct_info->struct_data, __context );
+	case STRUCT_TYPE_LIB_SECTION_LONGNAME:
+		ret = analyze_lib_section_longname( ( coff_sect_hdr* )__struct_info->struct_data, __context );
 		break;
-	case STRUCT_TYPE_COFF_SECTION_OBJ_FILE:
-		ret = analyze_coff_section_obj_file( ( coff_sect_hdr* )__struct_info->struct_data, __context );
+	case STRUCT_TYPE_LIB_SECTION_OBJ_FILE:
+		ret = analyze_lib_section_obj_file( ( coff_sect_hdr* )__struct_info->struct_data, __struct_info->param1, __context );
 		break;
 	case STRUCT_TYPE_COFF_FILE_HEADER:
 		ret = analyze_coff_file_hdr( ( coff_file_hdr* )__struct_info->struct_data, __context );
@@ -660,7 +779,7 @@ void CpeanalyzerDlg::OnBnClickedButtonSelFile()
 	edit = ::GetDlgItem( m_hWnd, IDC_EDIT_FILE_PATH );
 	ASSERT( NULL != edit );
 
-	ret = open_file( m_hWnd, file_name, MAX_PATH );
+	ret = open_file_dlg( m_hWnd, file_name, MAX_PATH );
 	if( 0 > ret )
 	{
 		::SetWindowText( edit, "" );

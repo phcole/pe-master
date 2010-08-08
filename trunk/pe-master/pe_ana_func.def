@@ -8,3 +8,4 @@ analyze_lib_file
 start_analyze_file
 analyze_pe_file
 mem_submem
+open_file_dlg

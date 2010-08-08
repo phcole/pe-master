@@ -20,6 +20,29 @@
 
 #include "common.h"
 
+int32 open_file_dlg( HWND owner, char *seled_file_name, dword buff_len )
+{
+	int32 ret;
+	OPENFILENAME ofn;
+
+	ASSERT( NULL != seled_file_name &&
+		0 < buff_len );
+
+	ZeroMemory(&ofn, sizeof(ofn));
+	ofn.lStructSize = sizeof(OPENFILENAME);
+	ofn.hwndOwner = owner;
+	ofn.lpstrFile = seled_file_name;
+	ofn.lpstrFile[ 0 ] = '\0';
+	ofn.lpstrTitle = "select one file";
+	ofn.nMaxFile = buff_len;
+	ofn.lpstrFilter = "pe file (*.exe;*.dll)\0*.exe;*.dll\0coff file (*.lib;*.obj)\0*.lib;*.obj\0all file (*.*)\0*.*\0";
+	ofn.lpstrInitialDir = NULL;
+	ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
+	ret = GetOpenFileName( &ofn );
+
+	return ret == 0 ? -1 : 0;
+}
+
 void littelendian2bigendian( void * p, size_t size )
 {
 	int i;
