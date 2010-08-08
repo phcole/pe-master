@@ -241,7 +241,7 @@ int analyze_lib_file( byte *data, dword data_len, file_analyzer *analyzer )
 	{
 		struct_infos info;
 		info.struct_data = ( byte* )section1;
-		info.struct_id = STRUCT_TYPE_COFF_SECTION1;
+		info.struct_id = STRUCT_TYPE_LIB_SECTION1;
 		info.struct_name = "lib file section 1";
 
 		analyzer->struct_analyze( &info, analyzer->context );
@@ -264,7 +264,7 @@ int analyze_lib_file( byte *data, dword data_len, file_analyzer *analyzer )
 	{
 		struct_infos info;
 		info.struct_data = section2;
-		info.struct_id = STRUCT_TYPE_COFF_SECTION2;
+		info.struct_id = STRUCT_TYPE_LIB_SECTION2;
 		info.struct_name = "lib file section 2";
 
 		analyzer->struct_analyze( &info, analyzer->context );
@@ -293,7 +293,7 @@ int analyze_lib_file( byte *data, dword data_len, file_analyzer *analyzer )
 		{
 			struct_infos info;
 			info.struct_data = long_name_sect;
-			info.struct_id = STRUCT_TYPE_COFF_SECTION_LONGNAME;
+			info.struct_id = STRUCT_TYPE_LIB_SECTION_LONGNAME;
 			info.struct_name = "lib file section 1";
 
 			analyzer->struct_analyze( &info, analyzer->context );
@@ -341,7 +341,7 @@ int analyze_lib_file( byte *data, dword data_len, file_analyzer *analyzer )
 			analyzer->obj_file_analyze( &info, analyzer->context );
 		}
 
-		analyze_coff_file( ( byte* )obj_file_sect + sizeof( lib_section_hdr ), atoi( obj_file_sect->size ), analyzer );
+		//analyze_coff_file( ( byte* )obj_file_sect + sizeof( lib_section_hdr ), atoi( obj_file_sect->size ), analyzer );
 
 		offset += sizeof( lib_section_hdr );
 		offset += atoi( obj_file_sect->size );
