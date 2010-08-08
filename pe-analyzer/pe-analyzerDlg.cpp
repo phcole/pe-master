@@ -22,14 +22,25 @@
 //
 
 #include "stdafx.h"
-#include "pe-analyzer.h"
+#include "resource.h"
 #include "pe-analyzerDlg.h"
 #include ".\pe-analyzerdlg.h"
+
+#pragma comment( lib, "pe-master.lib" )
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif
 
+#define MAX_DESC_INFO_LEN 4096
+#define MAX_FILTER_LEN 1024
+CHAR g_szFilter[ MAX_FILTER_LEN ] = { 0 };
+
+typedef struct __sym_org_data
+{
+	byte *sym_data;
+	dword sym_data_len;
+} sym_org_data;
 
 // 用于应用程序“关于”菜单项的 CAboutDlg 对话框
 
@@ -84,10 +95,50 @@ BEGIN_MESSAGE_MAP(CpeanalyzerDlg, CDialog)
 	//}}AFX_MSG_MAP
 	ON_BN_CLICKED(IDOK, OnBnClickedOk)
 	ON_BN_CLICKED(IDCANCEL, OnBnClickedCancel)
+	ON_BN_CLICKED(IDC_BUTTON_SEL_FILE, OnBnClickedButtonSelFile)
+	ON_BN_CLICKED(IDC_STOP_ANALYZE, OnBnClickedStopAnalyze)
 END_MESSAGE_MAP()
 
 
 // CpeanalyzerDlg 消息处理程序
+
+int32 init_wnd_feature( CpeanalyzerDlg *dlg )
+{
+	HWND tree_main;
+	HWND tree_detail;
+
+	ASSERT( NULL != dlg );
+
+	tree_main = ( HWND )dlg->GetDlgItem( IDC_TREE_MAIN );
+	tree_detail = ( HWND )dlg->GetDlgItem( IDC_TREE_DETAIL );
+	
+	::SendMessage( tree_main, TVM_SETBKCOLOR, 0, 0x00e1f0ff );
+	::SendMessage( tree_main, TVM_SETTEXTCOLOR, 0, 0x00ffffe0 );
+	::SendMessage( tree_main, TVM_SETLINECOLOR, 0, 0x00ffffe0 );
+	::SendMessage( tree_main, TVM_SETINSERTMARKCOLOR, 0, 0x00ffffe0 );
+
+	return 0;
+};
+
+
+HWND insert_text_in_tree( HWND tree, const char *str_insert )
+{
+	TV_INSERTSTRUCT tvis;
+	HWND sub_tree;
+
+	ASSERT( NULL != tree );
+	ASSERT( NULL != str_insert );
+
+	tvis.hParent = NULL;
+	tvis.hInsertAfter = TVI_ROOT;
+	tvis.item.mask = TVIF_TEXT | TVIF_IMAGE | TVIF_SELECTEDIMAGE;
+	tvis.item.pszText = ( char* )str_insert;
+	tvis.item.iImage = -1;
+	tvis.item.iSelectedImage = -1;
+
+	sub_tree = ( HWND )SendMessage( tree, TVM_INSERTITEM, 0, ( LPARAM )&tvis );
+	return sub_tree;
+}
 
 CpeanalyzerDlg *g_pDlg;
 BOOL CpeanalyzerDlg::OnInitDialog()
@@ -111,8 +162,8 @@ BOOL CpeanalyzerDlg::OnInitDialog()
 		}
 	}
 
-	GetDlgItem( IDC_EDIT_FILTER )->SetWindowText( "CString" );
-	GetDlgItem( IDC_EDIT_PE_FILE_PATH )->SetWindowText( "C:\\WINDDK\\2600.1106\\lib\\wxp\\i386\\mfc42.lib" ); //"lib_sample.lib" );
+	//GetDlgItem( IDC_EDIT_FILTER )->SetWindowText( "CString" );
+	GetDlgItem( IDC_EDIT_PE_FILE_PATH )->SetWindowText( "C:\\WINDDK\\2600.1106\\lib\\wxp\\i386\\mfc42.lib" ); /*"E:\\Visual C++ 6.0 SP6简体中文版\\VC98\\LIB\\MSUILSTF.DLL" );*///"lib_sample.lib" );
 	// 设置此对话框的图标。当应用程序主窗口不是对话框时，框架将自动
 	//  执行此操作
 	SetIcon(m_hIcon, TRUE);			// 设置大图标
@@ -172,12 +223,6 @@ HCURSOR CpeanalyzerDlg::OnQueryDragIcon()
 	return static_cast<HCURSOR>(m_hIcon);
 }
 
-#pragma comment( lib, "pe-master.lib" )
-#include "common.h"
-#include "common_analyze.h"
-#include "pe_analyze.h"
-#include "lib_analyze.h"
-
 int sum( int num1, int num2 )
 {
 	return num1 + num2;
@@ -231,14 +276,283 @@ int ret_sample_func_code( byte **org_func_code, dword *func_code_len )
 
 BOOL g_bStop;
 
-#define MAX_FILTER_LEN 1024
-CHAR g_szFilter[ MAX_FILTER_LEN ] = { 0 };
 
-typedef struct __sym_org_data
+int32 error_handle( error_infos *info )
 {
-	byte *sym_data;
-	dword sym_data_len;
-} sym_org_data;
+	switch( info->err_code )
+	{
+	default:
+		break;
+	}
+
+	return 0;
+}
+
+int32 analyze_pe_dos_header( PIMAGE_DOS_HEADER dos_hdr, analyze_context *context )
+{
+
+	return 0;
+}
+
+#define MAX_PE_OPTIONAL_DESC_LEN 4096
+int32 analyze_pe_optional_hdr( PIMAGE_OPTIONAL_HEADER option_hdr, analyze_context *context )
+{
+	HWND tree_main;
+	HWND tree_detail;
+	HWND sub_tree;
+	HWND ret;
+
+	char opt_hdr_desc[ MAX_PE_OPTIONAL_DESC_LEN ];
+	ASSERT( NULL != option_hdr );
+	ASSERT( NULL != context );
+	ASSERT( NULL != context->tree_main );
+	ASSERT( NULL != context->tree_detail );
+	
+	tree_main = context->tree_main;
+	tree_detail = context->tree_detail;
+
+	option_hdr->AddressOfEntryPoint;
+
+	sub_tree = insert_text_in_tree( tree_main, "PE Optional Header" );
+
+	printf( opt_hdr_desc, "PE Image base : 0x%0.8x", option_hdr->ImageBase );
+	ret = insert_text_in_tree( sub_tree, opt_hdr_desc );
+
+	printf( opt_hdr_desc, "PE optional header signature: 0x%0.4x", option_hdr->Magic );
+	ret = insert_text_in_tree( sub_tree, opt_hdr_desc );
+
+	printf( opt_hdr_desc, "PE Section alignment: 0x%0.8x", option_hdr->SectionAlignment );
+	ret = insert_text_in_tree( sub_tree, opt_hdr_desc );
+
+	printf( opt_hdr_desc, "PE Section alignment: 0x%0.8x", option_hdr->FileAlignment );
+	ret = insert_text_in_tree( sub_tree, opt_hdr_desc );
+
+	printf( opt_hdr_desc, "PE Minor subsytem version: 0x%0.8x", option_hdr->MinorSubsystemVersion );
+	ret = insert_text_in_tree( sub_tree, opt_hdr_desc );
+
+	printf( opt_hdr_desc, "PE Minor subsytem version: 0x%0.8x", option_hdr->MinorSubsystemVersion );
+	ret = insert_text_in_tree( sub_tree, opt_hdr_desc );
+
+	option_hdr->SizeOfImage;
+	option_hdr->SizeOfHeaders;
+	option_hdr->CheckSum; //CheckSumMappedFile()
+	option_hdr->SizeOfStackReserve;
+	option_hdr->SizeOfStackCommit;
+	option_hdr->SizeOfHeapReserve;
+	option_hdr->SizeOfHeapCommit;
+	return 0;
+}
+
+int32 open_file( HWND owner, char *seled_file_name, dword buff_len )
+{
+	
+	ASSERT( NULL != seled_file_name &&
+		0 < buff_len );
+
+	int32 ret;
+	OPENFILENAME ofn;
+	ZeroMemory(&ofn, sizeof(ofn));
+	ofn.lStructSize = sizeof(OPENFILENAME);
+	ofn.hwndOwner = owner;
+	ofn.lpstrFile = seled_file_name;
+	ofn.lpstrFile[ 0 ] = '\0';
+	ofn.lpstrTitle = "select one file";
+	ofn.nMaxFile = buff_len;
+	ofn.lpstrFilter = "pe file (*.exe;*.dll)\0*.exe;*.dll\0coff file (*.lib;*.obj)\0*.lib;*.obj\0all file (*.*)\0*.*\0";
+	ofn.lpstrInitialDir = NULL;
+	ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
+	ret = GetOpenFileName( &ofn );
+
+	return ret == 0 ? -1 : 0;
+}
+
+int32 analyze_obj_file( obj_file_info *info, void *context )
+{
+	char file_path[ MAX_PATH ];
+	char *path_delim;
+	analyze_context *__context;
+
+	__context = ( analyze_context* )context;
+	
+	strcpy( file_path, __context->file_path );
+
+	path_delim = strrchr( file_path, '\\' );
+	
+	if( path_delim == NULL )
+	{
+		return -1;
+	}
+
+	*path_delim = '\0';
+
+	return write_to_new_file( path_delim, info->file_name, info->file_data, info->file_data_len );
+}
+
+
+int32 analyze_coff_section_hdr( coff_sect_hdr *file_hdr, analyze_context *costext )
+{
+	return 0;
+}
+
+int32 analyze_coff_file_hdr( coff_file_hdr *file_hdr, analyze_context *costext )
+{
+	char desc[ MAX_DESC_INFO_LEN ];
+
+	HWND tree_main;
+	HWND tree_detail;
+	HWND tree_sub;
+
+	tree_main = costext->tree_main;
+
+	sprintf( desc, "%d", file_hdr->opt_hdr_size );
+
+	tree_sub = insert_text_in_tree( tree_main, "COFF FILE HEADER" );
+
+	if( NULL == tree_sub )
+	{
+		return -1;
+	}
+
+	return 0;
+}
+
+int32 analyze_coff_section2( coff_sect_hdr *section1, analyze_context *costext )
+{
+
+	char desc[ MAX_DESC_INFO_LEN ];
+
+	HWND tree_main;
+	HWND tree_detail;
+	HWND tree_sub;
+
+	tree_main = costext->tree_main;
+
+	tree_sub = insert_text_in_tree( tree_main, section1->name );
+
+	if( NULL == tree_sub )
+	{
+		return -1;
+	}
+
+	return 0;
+}
+
+int32 analyze_coff_section_longname( coff_sect_hdr *section1, analyze_context *costext )
+{
+
+	char desc[ MAX_DESC_INFO_LEN ];
+
+	HWND tree_main;
+	HWND tree_detail;
+	HWND tree_sub;
+
+	tree_main = costext->tree_main;
+
+	tree_sub = insert_text_in_tree( tree_main, section1->name );
+
+	if( NULL == tree_sub )
+	{
+		return -1;
+	}
+
+	return 0;
+}
+
+int32 analyze_coff_section_obj_file( coff_sect_hdr *section1, analyze_context *costext )
+{
+
+	char desc[ MAX_DESC_INFO_LEN ];
+
+	HWND tree_main;
+	HWND tree_detail;
+	HWND tree_sub;
+
+	tree_main = costext->tree_main;
+
+	tree_sub = insert_text_in_tree( tree_main, section1->name );
+
+	if( NULL == tree_sub )
+	{
+		return -1;
+	}
+
+	return 0;
+}
+
+int32 analyze_coff_section1( coff_sect_hdr *section1, analyze_context *costext )
+{
+
+	char desc[ MAX_DESC_INFO_LEN ];
+
+	HWND tree_main;
+	HWND tree_detail;
+	HWND tree_sub;
+
+	tree_main = costext->tree_main;
+
+	tree_sub = insert_text_in_tree( tree_main, section1->name );
+
+	if( NULL == tree_sub )
+	{
+		return -1;
+	}
+
+	return 0;
+}
+
+int32 analzye_all_struct( struct_infos *struct_info, void *context )
+{
+	int ret;
+	analyze_context *__context;
+	struct_infos *__struct_info;
+	ASSERT( NULL != struct_info );
+	ASSERT( NULL != context );
+
+	ret = 0;
+
+	__context = ( analyze_context* )context;
+	__struct_info = struct_info;
+
+	switch( __struct_info->struct_id )
+	{
+	case STRUCT_TYPE_PE_DOS_HEADER:
+		ret = analyze_pe_dos_header( ( PIMAGE_DOS_HEADER )__struct_info->struct_data, __context );
+		break;
+	case STRUCT_TYPE_PE_DOS_STUB:
+		//ret = analyze_pe_dos_stub( ( byte* )__struct_info->struct_data, __context );
+		break;
+	case STRUCT_TYPE_PE_NT_HEADER:
+		//ret = analyze_pe_nt_hdr( ( PIMAGE_FILE_HEADER )__struct_info->struct_data, __context );
+		break;
+	case STRUCT_TYPE_PE_OPTIONAL_HEADER:
+		//ret = analyze_pe_optional_hdr( ( PIMAGE_OPTIONAL_HEADER )__struct_info->struct_data, __context );
+		break;
+	case STRUCT_TYPE_COFF_SECTION1:
+		ret = analyze_coff_section1( ( coff_sect_hdr* )__struct_info->struct_data, __context );
+		break;
+	case STRUCT_TYPE_COFF_SECTION2:
+		ret = analyze_coff_section2( ( coff_sect_hdr* )__struct_info->struct_data, __context );
+		break;
+	case STRUCT_TYPE_COFF_SECTION_LONGNAME:
+		ret = analyze_coff_section_longname( ( coff_sect_hdr* )__struct_info->struct_data, __context );
+		break;
+	case STRUCT_TYPE_COFF_SECTION_OBJ_FILE:
+		ret = analyze_coff_section_obj_file( ( coff_sect_hdr* )__struct_info->struct_data, __context );
+		break;
+	case STRUCT_TYPE_COFF_FILE_HEADER:
+		ret = analyze_coff_file_hdr( ( coff_file_hdr* )__struct_info->struct_data, __context );
+		break;
+	case STRUCT_TYPE_COFF_SECTION_HEADER:
+		ret = analyze_coff_section_hdr(  ( coff_sect_hdr* )__struct_info->struct_data, __context );
+		break;
+	default:
+		ASSERT( FALSE );	
+		ret -1;
+		break;
+	}
+
+	return ret;
+}
 
 int when_func_code_finded( code_infos* code_info, void *context )
 {
@@ -276,72 +590,104 @@ int when_find_lib_func_name( sym_infos* sym_info, void *context )
 	//	int kk = 0;
 	//	//return -1;
 	//}	
-	pRichEdit = ( CRichEditCtrl *)g_pDlg->GetDlgItem( IDC_EDIT_OUTPUT );
-	
-	pRichEdit->GetWindowText( strText );
-	strAddLine.Format( "%s #%d\r\n", sym_info->sym_name, 0 );
+	//pRichEdit = ( CRichEditCtrl *)g_pDlg->GetDlgItem( IDC_EDIT_OUTPUT );
+	//
+	//pRichEdit->GetWindowText( strText );
+	//strAddLine.Format( "%s #%d\r\n", sym_info->sym_name, 0 );
 
-	strText += strAddLine;
+	//strText += strAddLine;
 
-	pRichEdit->SetWindowText( strText );
+	//pRichEdit->SetWindowText( strText );
 	return 0;
 }
 
-sym_org_data g_sym_org_data;
-
-dword CALLBACK thread_read_file_symbols( LPVOID lpParam )
+dword CALLBACK thread_read_file_symbols( LPVOID param )
 {
-	HWND hCtl;
-	TCHAR szFilePath[ MAX_PATH ];
+	analyze_context *context;
 
-	hCtl = ::GetDlgItem( g_pDlg->m_hWnd, IDC_EDIT_PE_FILE_PATH );
-	::GetWindowText( hCtl, szFilePath, MAX_PATH );
+	ASSERT( NULL != param );
+	context = ( analyze_context* )param;
 
-	hCtl = ::GetDlgItem( g_pDlg->m_hWnd, IDC_EDIT_FILTER );
-	::GetWindowText( hCtl, g_szFilter, MAX_FILTER_LEN );
+	ASSERT( '\0' != context->file_path[ 0 ] );
 
-	ret_sample_func_code( &g_sym_org_data.sym_data, &g_sym_org_data.sym_data_len );
-	coff_analyzer analyzer;
-	analyzer.strs_analyze = when_find_lib_func_name;
-	analyzer.code_analyze = when_func_code_finded;
-	analyzer.syms_analyze = when_find_lib_func_name;
-	analyzer.context = &g_sym_org_data;
+	context->analyzer.strs_analyze = when_find_lib_func_name;
+	context->analyzer.code_analyze = when_func_code_finded;
+	context->analyzer.syms_analyze = when_find_lib_func_name;
+	context->analyzer.struct_analyze = analzye_all_struct;
+	context->analyzer.obj_file_analyze = analyze_obj_file;
+	context->analyzer.error_handler = error_handle;
+	context->analyzer.context = context;
 
-	//set_sym_process_func( when_find_lib_func_nam, &g_sym_org_data );
-	start_analyze_file( szFilePath, &analyzer );
+	start_analyze_file( context->file_path, &context->analyzer );
 
 	return 0;
 }
 
-HANDLE g_hThread;
 void CpeanalyzerDlg::OnBnClickedOk()
 {
-	HWND hCtl;
-	hCtl = ::GetDlgItem( m_hWnd, IDC_EDIT_OUTPUT );
-	::SetWindowText( hCtl, "" );
+	
+	HWND tree_main;
+	HWND tree_detail;
+	HWND edit_file_path;
 
-	g_hThread = CreateThread( NULL, 0, thread_read_file_symbols, this, NULL, NULL );
-	if( NULL == g_hThread )
+	tree_main = ( HWND )::GetDlgItem( m_hWnd, IDC_TREE_MAIN );
+	tree_detail = ( HWND )::GetDlgItem( m_hWnd, IDC_TREE_DETAIL );
+	edit_file_path = ( HWND )::GetDlgItem( m_hWnd, IDC_EDIT_FILE_PATH );
+
+	analyzing_context.tree_main = tree_main;
+	analyzing_context.tree_detail = tree_detail;
+	::GetWindowText( edit_file_path, analyzing_context.file_path, sizeof( analyzing_context.file_path ) );
+	if( '\0' == analyzing_context.file_path[ 0 ] )
+	{
+		::MessageBox( NULL, "Please input the name the analyzing file\n", "Error", NULL );
+		return ;
+	}
+
+	m_hThread = CreateThread( NULL, 0, thread_read_file_symbols, &analyzing_context, NULL, NULL );
+	if( NULL == m_hThread )
 	{
 		return;
 	}
 	
 }
 
+void CpeanalyzerDlg::OnBnClickedButtonSelFile()
+{
+	int32 ret;
+	HWND edit;
+	char file_name[ MAX_PATH ];
+	
+	edit = ::GetDlgItem( m_hWnd, IDC_EDIT_FILE_PATH );
+	ASSERT( NULL != edit );
+
+	ret = open_file( m_hWnd, file_name, MAX_PATH );
+	if( 0 > ret )
+	{
+		::SetWindowText( edit, "" );
+	}
+
+	::SetWindowText( edit, file_name );
+}
+
 void CpeanalyzerDlg::OnBnClickedCancel()
 {
 	// TODO: Add your control notification handler code here
-	//OnCancel();
+	OnCancel();
+}
+
+void CpeanalyzerDlg::OnBnClickedStopAnalyze()
+{
+	// TODO: 在此添加控件通知处理程序代码
 	DWORD dwWaitRet;
 
-	if( g_hThread == NULL )
+	if( m_hThread == NULL )
 		return;
 
 	g_bStop = TRUE;
 
-	dwWaitRet = WaitForSingleObject( g_hThread, 2000 );
+	dwWaitRet = WaitForSingleObject( m_hThread, 2000 );
 	if( dwWaitRet != WAIT_OBJECT_0 )
 	{
-		TerminateThread( g_hThread, 0 );
+		TerminateThread( m_hThread, 0 );
 	}
 }

@@ -21,6 +21,10 @@
 #ifndef __COMMON_ANALYZE_H__
 #define __COMMON_ANALYZE_H__
 
+#define PE_FILE_TYPE 0x4d5a
+#define LIB_FILE_TYPE 0x02
+#define COFF_FILE_TYPE 0x041c
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -40,20 +44,53 @@ typedef struct __sym_infos
 	dword sym_data_len;
 } sym_infos;
 
+typedef struct __struct_infos
+{
+	byte *struct_data;
+	dword struct_id;
+	char *struct_name;
+	dword param1;
+	void* struct_context;
+} struct_infos;
+
+typedef struct __error_infos
+{
+	dword err_code;
+	char *desc;
+} error_infos;
+
+typedef struct __obj_file_info
+{
+	char *file_name;
+	byte *file_data;
+	dword file_data_len;
+} obj_file_info;
+
+typedef struct __name_info
+{
+	char *name;
+	dword name_order;
+} name_info;
+
+typedef int ( *export_import_info_proc )( name_info *info, void *context );
 typedef int ( *sym_info_proc )( sym_infos *sym_info, void *context );
 typedef int ( *code_info_proc )( code_infos *sym_info, void *context );
+typedef int ( *struct_info_proc )( struct_infos *struct_info, void *context );
+typedef int ( *obj_file_info_proc )( obj_file_info *file_info, void *context );
+typedef int ( *error_handler_proc )( error_infos *err_info );
 
-typedef struct __coff_analyzer
+typedef struct __file_analyzer
 {
 	sym_info_proc syms_analyze;
 	sym_info_proc strs_analyze;
 	code_info_proc code_analyze;
+	obj_file_info_proc obj_file_analyze;
+	struct_info_proc struct_analyze;
+	export_import_info_proc name_analyze;
+	error_handler_proc error_handler;
 	void *context;
 
-} coff_analyzer;
-
-int start_analyze_file( CHAR *filename, coff_analyzer *analyzer );
-void set_sym_process_func( coff_analyzer *analyzer );
+} file_analyzer;
 
 #ifdef __cplusplus
 }

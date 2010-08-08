@@ -25,6 +25,8 @@
 #include <conio.h>
 #include <malloc.h>
 
+#define callback __stdcall
+
 #define TRUE 1
 #define FALSE 0
 
@@ -48,8 +50,12 @@ typedef int int32;
 extern "C" {
 #endif
 
-int read_all_file_data( char *file_name, byte **data, dword *data_len );
-int32 mem_submem(byte* pSubMem, int32 nSubMemLen, byte* pMem, int32 nMemLen);
+void littelendian2bigendian( byte *p, size_t size );
+int write_to_new_file( char *file_path, char *file_name, byte *data, dword data_len );
+int32 read_all_file_data( char *file_name, byte **data, dword *data_len );
+int32 mem_submem( byte* target_cont, int32 target_cont_len, byte* src_mem, int32 src_mem_len);
+void dump_mem( void *mem, int size );
+int release_file_data( byte *data );
 
 #ifdef __cplusplus
 }

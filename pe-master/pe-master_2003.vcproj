@@ -22,7 +22,7 @@
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
 				MinimalRebuild="TRUE"
 				BasicRuntimeChecks="3"
-				RuntimeLibrary="5"
+				RuntimeLibrary="1"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				Detect64BitPortabilityProblems="TRUE"
@@ -68,7 +68,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
-				RuntimeLibrary="4"
+				RuntimeLibrary="0"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				Detect64BitPortabilityProblems="TRUE"
@@ -115,7 +115,7 @@
 			Filter="cpp;c;cxx;def;odl;idl;hpj;bat;asm;asmx"
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}">
 			<File
-				RelativePath=".\coff_file_analyze.c">
+				RelativePath=".\coff_file_analyzer.c">
 			</File>
 			<File
 				RelativePath=".\common.c">
@@ -124,10 +124,19 @@
 				RelativePath=".\common_analyze.c">
 			</File>
 			<File
-				RelativePath=".\lib_analyze.c">
+				RelativePath=".\file_analyzer.c">
 			</File>
 			<File
-				RelativePath=".\pe_analyze.c">
+				RelativePath=".\lib_file_analyzer.c">
+			</File>
+			<File
+				RelativePath=".\lib_struct_analyzer.c">
+			</File>
+			<File
+				RelativePath=".\pe_file_analyzer.c">
+			</File>
+			<File
+				RelativePath=".\pe_struct_analyzer.c">
 			</File>
 		</Filter>
 		<Filter
@@ -135,7 +144,7 @@
 			Filter="h;hpp;hxx;hm;inl;inc;xsd"
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}">
 			<File
-				RelativePath=".\coff_file_analyze.h">
+				RelativePath=".\coff_file_analyzer.h">
 			</File>
 			<File
 				RelativePath=".\common.h">
@@ -144,13 +153,22 @@
 				RelativePath=".\common_analyze.h">
 			</File>
 			<File
-				RelativePath=".\lib_analyze.h">
+				RelativePath=".\file_analyzer.h">
+			</File>
+			<File
+				RelativePath=".\lib_file_analyzer.h">
+			</File>
+			<File
+				RelativePath=".\lib_struct_analyzer.h">
 			</File>
 			<File
 				RelativePath=".\pe_ana_func.def">
 			</File>
 			<File
-				RelativePath=".\pe_analyze.h">
+				RelativePath=".\pe_file_analyzer.h">
+			</File>
+			<File
+				RelativePath=".\pe_struct_analyzer.h">
 			</File>
 		</Filter>
 		<Filter
