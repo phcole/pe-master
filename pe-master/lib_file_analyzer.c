@@ -331,7 +331,18 @@ int analyze_lib_file( byte *data, dword data_len, file_analyzer *analyzer )
 			obj_file_name = obj_file_sect->name;
 		}
 
-		
+		if( NULL != analyzer->struct_analyze )
+		{
+			struct_infos info;
+			info.struct_data = ( byte* )obj_file_sect;
+			info.struct_id = STRUCT_TYPE_LIB_SECTION_OBJ_FILE;
+			info.struct_name = NULL;
+			info.struct_context = data;
+			info.param1 = i;
+
+			analyzer->struct_analyze( &info, analyzer->context );
+		}
+
 		if( NULL != analyzer->obj_file_analyze )
 		{
 			obj_file_info info;
