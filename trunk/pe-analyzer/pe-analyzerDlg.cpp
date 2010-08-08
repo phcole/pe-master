@@ -38,8 +38,12 @@ CHAR g_szFilter[ MAX_FILTER_LEN ] = { 0 };
 
 #define FIND_SUB_TREE_TRAVERSE 0x01
 #define LIB_FILE_TITLE "LIB FILE"
+#define LIB_SECTION1_TITLE "SECTION1"
+#define LIB_SECTION2_TITLE "SECTION2"
 #define LIB_LONGNAME_SECTION_TITLE "LONG NAME SECTION"
 #define LIB_OBJ_FILE_SECTION_TITLE "OBJ FILE SECTION "
+
+#define COFF_FILE_TITLE "COFF FILE"
 
 typedef struct __sym_org_data
 {
@@ -102,6 +106,9 @@ BEGIN_MESSAGE_MAP(CpeanalyzerDlg, CDialog)
 	ON_BN_CLICKED(IDCANCEL, OnBnClickedCancel)
 	ON_BN_CLICKED(IDC_BUTTON_SEL_FILE, OnBnClickedButtonSelFile)
 	ON_BN_CLICKED(IDC_STOP_ANALYZE, OnBnClickedStopAnalyze)
+	ON_NOTIFY(TVN_SELCHANGED, IDC_TREE_MAIN, OnTvnSelchangedTreeMain)
+	ON_NOTIFY(TVN_SELCHANGED, IDC_TREE_DETAIL, OnTvnSelchangedTreeDetail)
+	ON_NOTIFY(NM_RCLICK, IDC_TREE_MAIN, OnRClientTreeMain )
 END_MESSAGE_MAP()
 
 
@@ -211,8 +218,17 @@ HTREEITEM insert_text_in_tree( HWND tree, HTREEITEM tree_item, const char *str_i
 	ASSERT( NULL != tree );
 	ASSERT( NULL != str_insert );
 
-	tvis.hParent = NULL;
-	tvis.hInsertAfter = tree_item;
+	if( TVI_ROOT == tree_item )
+	{
+		tvis.hParent = NULL;
+		tvis.hInsertAfter = tree_item;
+	}
+	else
+	{
+		tvis.hParent = tree_item;
+		tvis.hInsertAfter = NULL;
+	}
+
 	tvis.item.mask = TVIF_TEXT | TVIF_IMAGE | TVIF_SELECTEDIMAGE;
 	tvis.item.pszText = ( char* )str_insert;
 	tvis.item.iImage = -1;
@@ -467,6 +483,7 @@ int32 analyze_coff_section_hdr( coff_sect_hdr *file_hdr, analyze_context *costex
 //	unsigned short flags;
 //} coff_file_hdr;
 
+
 int32 analyze_coff_file_hdr( coff_file_hdr *file_hdr, analyze_context *costext )
 {
 	char desc[ MAX_DESC_INFO_LEN ];
@@ -481,7 +498,7 @@ int32 analyze_coff_file_hdr( coff_file_hdr *file_hdr, analyze_context *costext )
 	tree_target = find_sub_tree_in_tree( tree_main, TVI_ROOT, LIB_FILE_TITLE, NULL );
 	if( NULL == tree_target )
 	{
-		tree_sub = insert_text_in_tree( tree_main, TVI_ROOT, "COFF FILE", NULL );
+		tree_sub = insert_text_in_tree( tree_main, TVI_ROOT, COFF_FILE_TITLE, NULL );
 		if( NULL == tree_sub )
 		{
 			return -1;
@@ -527,7 +544,7 @@ int32 analyze_lib_section2( coff_sect_hdr *section2, analyze_context *costext )
 		return -1;
 	}
 	
-	tree_sub = insert_text_in_tree( tree_main, tree_target, section2->name, ( byte* )section2 );
+	tree_sub = insert_text_in_tree( tree_main, tree_target, LIB_SECTION2_TITLE, ( byte* )section2 );
 
 	if( NULL == tree_sub )
 	{
@@ -580,7 +597,7 @@ int32 analyze_lib_section_obj_file( coff_sect_hdr *obj_file_sect, dword index, a
 		return -1;
 	}
 
-	sprintf( desc, "%s%d", LIB_OBJ_FILE_SECTION_TITLE, index );
+	sprintf( desc, "%s%d", LIB_OBJ_FILE_SECTION_TITLE, index + 1 );
 	tree_sub = insert_text_in_tree( tree_main, tree_target, desc, ( byte* )obj_file_sect );
 
 	if( NULL == tree_sub )
@@ -593,7 +610,6 @@ int32 analyze_lib_section_obj_file( coff_sect_hdr *obj_file_sect, dword index, a
 
 int32 analyze_lib_section1( coff_sect_hdr *section1, analyze_context *costext )
 {
-
 	char desc[ MAX_DESC_INFO_LEN ];
 
 	HWND tree_main;
@@ -610,7 +626,7 @@ int32 analyze_lib_section1( coff_sect_hdr *section1, analyze_context *costext )
 		return -1;
 	}
 
-	tree_ret = insert_text_in_tree( tree_main, tree_sub, LIB_FILE_TITLE, ( byte* )section1 );
+	tree_ret = insert_text_in_tree( tree_main, tree_sub, LIB_SECTION1_TITLE, ( byte* )section1 );
 
 	if( NULL == tree_ret )
 	{
@@ -666,7 +682,7 @@ int32 analzye_all_struct( struct_infos *struct_info, void *context )
 		break;
 	default:
 		ASSERT( FALSE );	
-		ret -1;
+		ret = -1;
 		break;
 	}
 
@@ -720,6 +736,103 @@ int when_find_lib_func_name( sym_infos* sym_info, void *context )
 	return 0;
 }
 
+int32 on_main_tree_item_rclick( HTREEITEM item_clicked, file_analyzer *analyzer )
+{
+	int32 ret;
+	TVITEM tvi;
+	char str_geted[ MAX_TREE_ITEM_TITLE_LEN ];
+	analyze_context *context;
+
+	context = ( analyze_context* )analyzer->context;
+
+	memset( &tvi, 0, sizeof( tvi ) );
+	tvi.hItem = item_clicked;
+	tvi.pszText = str_geted;
+	tvi.cchTextMax = MAX_TREE_ITEM_TITLE_LEN;
+
+	ret = TreeView_GetItem( context->tree_main, &tvi );
+	if( FALSE == ret )
+	{
+		return -1;
+	}
+
+/*	if( NULL != strstr( str_geted, LIB_SECTION1_TITLE ) )
+	{
+
+	}
+	else if( NULL != strstr( str_geted, LIB_SECTION2_TITLE ) )
+	{
+
+	}
+	else if( NULL != strstr( str_geted, LIB_LONGNAME_SECTION_TITLE ) )
+	{
+
+	}
+	else */if( NULL != strstr( str_geted, LIB_OBJ_FILE_SECTION_TITLE ) )
+	{
+		obj_file_info file_info;
+		struct_infos *info;
+		info = ( struct_infos* )tvi.lParam;
+
+		file_info.file_name = ( char* )info->param1;
+		file_info.file_data = info->struct_data + sizeof( lib_section_hdr );
+		file_info.file_data_len = atoi( ( ( lib_section_hdr* )info->struct_data )->size );
+
+		analyze_obj_file( &file_info, context );
+	}
+
+	return 0;
+}
+
+int32 on_detail_tree_item_seled( HTREEITEM item_seled, file_analyzer *analyzer )
+{
+	int32 ret;
+	TVITEM tvi;
+	char str_geted[ MAX_TREE_ITEM_TITLE_LEN ];
+	analyze_context *context;
+
+	context = ( analyze_context* )analyzer->context;
+
+	memset( &tvi, 0, sizeof( tvi ) );
+	tvi.hItem = item_seled;
+	tvi.pszText = str_geted;
+	tvi.cchTextMax = MAX_TREE_ITEM_TITLE_LEN;
+
+	ret = TreeView_GetItem( context->tree_main, &tvi );
+	if( FALSE == ret )
+	{
+		return -1;
+	}
+
+	if( NULL != strstr( str_geted, LIB_SECTION1_TITLE ) )
+	{
+
+	}
+	else if( NULL != strstr( str_geted, LIB_SECTION2_TITLE ) )
+	{
+
+	}
+	else if( NULL != strstr( str_geted, LIB_LONGNAME_SECTION_TITLE ) )
+	{
+
+	}
+	else if( NULL != strstr( str_geted, LIB_OBJ_FILE_SECTION_TITLE ) )
+	{
+
+	}
+	return 0;
+}
+
+int32 on_main_tree_item_seled( HTREEITEM item_seled, file_analyzer *analyzer )
+{
+	analyze_context *context;
+
+	context = ( analyze_context* )analyzer->context;
+
+	
+	return 0;
+}
+
 dword CALLBACK thread_read_file_symbols( LPVOID param )
 {
 	analyze_context *context;
@@ -737,14 +850,58 @@ dword CALLBACK thread_read_file_symbols( LPVOID param )
 	context->analyzer.error_handler = error_handle;
 	context->analyzer.context = context;
 
-	start_analyze_file( context->file_path, &context->analyzer );
+	while( TRUE )
+	{
+		int32 ret;
+		MSG msg;
+		ret = ::GetMessage( &msg, ( HWND )0xffffffff, 0, NULL );
+		if( FALSE == ret )
+		{
+			goto exit_thread;
+		}
 
+		ASSERT( NULL == msg.hwnd );
+
+		switch( msg.message )
+		{
+		case WM_START_FILE_ANALYZE:
+			start_analyze_file( context->file_path, &context->analyzer );
+			break;
+		case WM_MAIN_TREE_ITEM_SELED:
+			on_main_tree_item_seled( ( HTREEITEM )msg.lParam, &context->analyzer );
+			break;
+		case WM_DETAIL_TREE_ITEM_SELED:
+			on_detail_tree_item_seled( ( HTREEITEM )msg.lParam, &context->analyzer );
+			break;
+		case MW_MAIN_TREE_ITEM_RCLICK:
+			on_main_tree_item_rclick( ( HTREEITEM )msg.lParam, &context->analyzer );
+			break;
+		default:
+			break;
+		}
+	}
+
+exit_thread:
+	ExitThread( 0 );
+	return 0;
+}
+
+int32 exit_work_thread( HANDLE hthread )
+{
+	dword wait_ret;
+	g_bStop = TRUE;
+	
+	wait_ret = WaitForSingleObject( hthread, 2000 );
+	if( wait_ret != WAIT_OBJECT_0 )
+	{
+		TerminateThread( hthread, 0 );
+	}
 	return 0;
 }
 
 void CpeanalyzerDlg::OnBnClickedOk()
 {
-	
+	int32 ret;
 	HWND tree_main;
 	HWND tree_detail;
 	HWND edit_file_path;
@@ -759,15 +916,20 @@ void CpeanalyzerDlg::OnBnClickedOk()
 	if( '\0' == analyzing_context.file_path[ 0 ] )
 	{
 		::MessageBox( NULL, "Please input the name the analyzing file\n", "Error", NULL );
-		return ;
+		return;
 	}
 
-	m_hThread = CreateThread( NULL, 0, thread_read_file_symbols, &analyzing_context, NULL, NULL );
+	m_hThread = CreateThread( NULL, 0, thread_read_file_symbols, &analyzing_context, NULL, &thread_id );
 	if( NULL == m_hThread )
 	{
 		return;
 	}
-	
+
+	ret = ::PostThreadMessage( thread_id, WM_START_FILE_ANALYZE, 0, 0 );
+	if( FALSE == ret )
+	{
+		exit_work_thread( m_hThread );
+	}
 }
 
 void CpeanalyzerDlg::OnBnClickedButtonSelFile()
@@ -802,11 +964,58 @@ void CpeanalyzerDlg::OnBnClickedStopAnalyze()
 	if( m_hThread == NULL )
 		return;
 
-	g_bStop = TRUE;
+	exit_work_thread( m_hThread );
+}
 
-	dwWaitRet = WaitForSingleObject( m_hThread, 2000 );
-	if( dwWaitRet != WAIT_OBJECT_0 )
+void CpeanalyzerDlg::OnTvnSelchangedTreeMain(NMHDR *pNMHDR, LRESULT *pResult)
+{
+	int32 ret;
+	LPNMTREEVIEW pNMTreeView = reinterpret_cast<LPNMTREEVIEW>(pNMHDR);
+	// TODO: 在此添加控件通知处理程序代码
+
+	ret = PostThreadMessage( thread_id, WM_MAIN_TREE_ITEM_SELED, ( WPARAM )&pNMTreeView->itemOld, ( LPARAM )&pNMTreeView->itemNew );
+	if( FALSE == ret )
 	{
-		TerminateThread( m_hThread, 0 );
+		exit_work_thread( m_hThread );
 	}
+	*pResult = 0;
+}
+
+void CpeanalyzerDlg::OnTvnSelchangedTreeDetail(NMHDR *pNMHDR, LRESULT *pResult)
+{
+	int32 ret;
+	LPNMTREEVIEW pNMTreeView = reinterpret_cast<LPNMTREEVIEW>(pNMHDR);
+	// TODO: 在此添加控件通知处理程序代码
+
+	ret = PostThreadMessage( thread_id, WM_DETAIL_TREE_ITEM_SELED, ( WPARAM )&pNMTreeView->itemOld, ( LPARAM )&pNMTreeView->itemNew );
+	if( FALSE == ret )
+	{
+		exit_work_thread( m_hThread );
+	}
+	*pResult = 0;
+}
+
+void CpeanalyzerDlg::OnRClientTreeMain( NMHDR *pNMHDR, LRESULT *pResult )
+{
+	POINT cur_pt;
+	int32 ret;
+	TVHITTESTINFO HitTestInfo;
+
+	GetCursorPos( &HitTestInfo.pt );
+	::ScreenToClient( pNMHDR->hwndFrom, &HitTestInfo.pt );
+	TreeView_HitTest( pNMHDR->hwndFrom, &HitTestInfo );
+
+	if( NULL == HitTestInfo.hItem || TVHT_ONITEM != HitTestInfo.flags )
+	{
+		goto __return;
+	}
+
+	ret = PostThreadMessage( thread_id, MW_MAIN_TREE_ITEM_RCLICK, ( WPARAM )NULL, ( LPARAM )HitTestInfo.hItem );
+	if( FALSE == ret )
+	{
+		exit_work_thread( m_hThread );
+	}
+	
+__return:
+	*pResult = 0;
 }
