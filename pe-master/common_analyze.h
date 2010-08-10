@@ -49,8 +49,7 @@ typedef struct __struct_infos
 	byte *struct_data;
 	dword struct_id;
 	char *struct_name;
-	dword param1;
-	void* struct_context;
+	dword struct_context;
 } struct_infos;
 
 typedef struct __error_infos
@@ -89,7 +88,8 @@ typedef struct __file_analyzer
 	export_import_info_proc name_analyze;
 	error_handler_proc error_handler;
 	void *context;
-
+	byte *all_file_data;
+	dword file_data_len;
 } file_analyzer;
 
 #ifdef __cplusplus

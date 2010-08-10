@@ -51,7 +51,7 @@ extern "C" {
 #endif
 
 int32 callback check_pe_file_type( byte *data, dword data_len );
-INT32 analyze_pe_file( byte *data, dword data_len, file_analyzer *analyzer );
+INT32 analyze_pe_file_struct( byte *data, dword data_len, file_analyzer *analyzer );
 
 #ifdef __cplusplus
 }

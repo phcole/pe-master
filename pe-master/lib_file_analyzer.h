@@ -63,7 +63,7 @@ extern "C" {
 int find_section_2( byte *data );
 int callback check_lib_file_type( byte *data, dword data_len );
 int read_obj_section( lib_section_hdr* sect, byte *data );
-int analyze_lib_file( byte *data, dword data_len, file_analyzer *analyzer );
+int analyze_lib_file_struct( byte *data, dword data_len, file_analyzer *analyzer );
 
 #ifdef __cplusplus
 }

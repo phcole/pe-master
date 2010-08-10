@@ -26,14 +26,20 @@
 #define WM_START_FILE_ANALYZE ( WM_USER + 0x101 )
 #define WM_MAIN_TREE_ITEM_SELED ( WM_USER + 0x102 )
 #define WM_DETAIL_TREE_ITEM_SELED ( WM_USER + 0x103 )
-#define MW_MAIN_TREE_ITEM_RCLICK ( WM_USER + 0x104 )
+#define WM_MAIN_TREE_ITEM_RCLICK ( WM_USER + 0x104 )
+#define MENU_ITEM_ID_DUMP_OBJ	( 0x1001 )
+#define WM_DO_UI_WORK ( WM_USER + 0x105 )
 
 typedef struct __analyze_context
 {
 	char file_path[ MAX_PATH ];
+	HWND main_wnd;
 	HWND tree_main;
 	HWND tree_detail;
 	file_analyzer analyzer;
+	HANDLE start_event;
+	HANDLE analyze_thread;
+	dword thread_id;
 } analyze_context;
 
 // CpeanalyzerDlg 对话框
@@ -53,8 +59,6 @@ public:
 // 实现
 protected:
 	HICON m_hIcon;
-	HANDLE m_hThread;
-	DWORD thread_id;
 	analyze_context analyzing_context;
 
 	// 生成的消息映射函数
@@ -71,4 +75,7 @@ public:
 	afx_msg void OnTvnSelchangedTreeMain(NMHDR *pNMHDR, LRESULT *pResult);
 	afx_msg void OnTvnSelchangedTreeDetail(NMHDR *pNMHDR, LRESULT *pResult);
 	afx_msg void OnRClientTreeMain( NMHDR *pNMHDR, LRESULT *pResult );
+	afx_msg void OnMeasureItem(int nIDCtl, LPMEASUREITEMSTRUCT lpMeasureItemStruct);
+	afx_msg void OnInitMenuPopup(CMenu* pPopupMenu, UINT nIndex, BOOL bSysMenu);
+	afx_msg LRESULT OnDoUIWork( WPARAM wParam, LPARAM lParam );
 };

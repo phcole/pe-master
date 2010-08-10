@@ -20,7 +20,7 @@
 
 #include "common.h"
 
-int32 open_file_dlg( HWND owner, char *seled_file_name, dword buff_len )
+int32 open_file_dlg( HWND owner, char *seled_file_name, dword buff_len, dword flags )
 {
 	int32 ret;
 	OPENFILENAME ofn;
@@ -37,7 +37,15 @@ int32 open_file_dlg( HWND owner, char *seled_file_name, dword buff_len )
 	ofn.nMaxFile = buff_len;
 	ofn.lpstrFilter = "pe file (*.exe;*.dll)\0*.exe;*.dll\0coff file (*.lib;*.obj)\0*.lib;*.obj\0all file (*.*)\0*.*\0";
 	ofn.lpstrInitialDir = NULL;
-	ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
+
+	if( flags == 0 )
+	{
+		ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
+	}
+	else
+	{
+		ofn.Flags = OFN_OVERWRITEPROMPT;
+	}
 	ret = GetOpenFileName( &ofn );
 
 	return ret == 0 ? -1 : 0;
@@ -93,22 +101,18 @@ int mem_submem( byte* target_cont, int target_cont_len, byte* src_mem, int src_m
 	return -1;
 }
 
-int write_to_new_file( char *file_path, char *file_name, byte *data, dword data_len )
+int write_to_new_file_by_name( char *file_name, byte *data, dword data_len )
 {
 	int ret = 0;
 	HANDLE hfile;
 	dword writed;
-	char new_file_name[ MAX_PATH ];
 
 	ASSERT( NULL != file_name );
 	ASSERT( NULL != data );
 	ASSERT( NULL != data_len );
 
-	strcpy( new_file_name, file_path );
-	strcat( new_file_name, "\\" );
-	strcat( new_file_name, file_name );
 
-	hfile = CreateFile( new_file_name, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_NEW, 0, NULL );
+	hfile = CreateFile( file_name, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_NEW, 0, NULL );
 	if( INVALID_HANDLE_VALUE == hfile )
 	{
 		return -1;
@@ -126,6 +130,26 @@ __error:
 	{
 		CloseHandle( hfile );
 	}
+
+	return ret;
+}
+
+int write_to_new_file( char *file_path, char *file_name, byte *file_data, dword file_data_len )
+{
+	int ret = 0;
+	HANDLE hfile;
+	dword writed;
+	char new_file_name[ MAX_PATH ];
+
+	ASSERT( NULL != file_name );
+	ASSERT( NULL != file_data );
+	ASSERT( NULL != file_data_len );
+
+	strcpy( new_file_name, file_path );
+	strcat( new_file_name, "\\" );
+	strcat( new_file_name, file_name );
+
+	ret = write_to_new_file_by_name( new_file_name, file_data, file_data_len );
 
 	return ret;
 }

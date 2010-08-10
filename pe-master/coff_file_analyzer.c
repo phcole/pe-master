@@ -360,11 +360,13 @@ int coff_section_relocs_analyze( coff_sect_hdr *sect_hdr, byte data, dword data_
 	return 0;
 }
 
-int analyze_coff_file( byte *data, dword data_len, file_analyzer *analyzer )
+int analyze_coff_file_struct( file_analyzer *analyzer )
 {
 	int ret;
 	int i;
 	int j;
+	byte *data;
+	dword data_len;
 	coff_file_hdr *file_hdr;
 	coff_sect_hdr *sect_hdr;
 	byte *opt_hdr;
@@ -384,6 +386,9 @@ int analyze_coff_file( byte *data, dword data_len, file_analyzer *analyzer )
 	char *code_name;
 	char *ln_sym_name;
 	
+	data = analyzer->all_file_data;
+	data_len = analyzer->file_data_len;
+
 	offset = 0;
 
 	ret = locate_coff_file_hdr( &data, &data_len );
