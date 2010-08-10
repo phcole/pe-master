@@ -602,7 +602,7 @@ int32 analyze_lib_section2( lib_section_hdr *section2, analyze_context *context 
 	int32 ret;
 	HWND tree_main;
 	HTREEITEM tree_target;
-	HTREEITEM tree_sub;
+	HTREEITEM tree_ret;
 	HTREEITEM tree_self;
 
 	tree_main = context->tree_main;
@@ -620,6 +620,11 @@ int32 analyze_lib_section2( lib_section_hdr *section2, analyze_context *context 
 	}
 
 	ret = add_lib_section_desc( section2, tree_self, context );
+	tree_ret = insert_text_in_tree( tree_main, tree_self, "Lib section string table", ( byte* )section2 );
+	if( NULL == tree_ret )
+	{
+		return -1;
+	}
 
 	return 0;
 }
@@ -706,6 +711,12 @@ int32 analyze_lib_section1( lib_section_hdr *section1, analyze_context *context 
 	}
 
 	ret = add_lib_section_desc( section1, tree_self, context );
+
+	tree_ret = insert_text_in_tree( tree_main, tree_self, "Lib section symbol table", ( byte* )section1 );
+	if( NULL == tree_ret )
+	{
+		return -1;
+	}
 
 	return 0;
 }
