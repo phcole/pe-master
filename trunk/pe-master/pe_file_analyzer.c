@@ -452,9 +452,9 @@ INT32 analyze_directories( PIMAGE_DATA_DIRECTORY dirs, DWORD dir_num, file_analy
 #define STRUCT_TYPE_PE_DATA_DIR 0x4d5a0005
 		struct_infos infos;
 		infos.struct_data = data_dirs;
-		infos.param1 = dir_num;
 		infos.struct_id = STRUCT_TYPE_PE_DATA_DIR;
 		infos.struct_name = "data directory";
+		infos.struct_context = dir_num;
 
 		analyzer->struct_analyze( &infos, analyzer->context );
 	}
@@ -510,7 +510,7 @@ INT32 analyze_sections( PIMAGE_SECTION_HEADER *sects, DWORD sect_num, file_analy
 	return 0;
 }
 
-INT32 analyze_pe_file( byte *data, dword data_len, file_analyzer *analyzer )
+INT32 analyze_pe_file_struct( byte *data, dword data_len, file_analyzer *analyzer )
 {
 	INT32 i;
 	BOOL ret;
@@ -651,7 +651,6 @@ INT32 analyze_pe_file( byte *data, dword data_len, file_analyzer *analyzer )
 	if( NULL == analyzer->struct_analyze )
 	{
 		struct_infos info;
-		info.struct_context = data;
 		info.struct_id = STRUCT_TYPE_PE_DOS_HEADER;
 		info.struct_name = NULL;
 		info.struct_data = ( byte* )dos_hdr;
@@ -659,7 +658,7 @@ INT32 analyze_pe_file( byte *data, dword data_len, file_analyzer *analyzer )
 		
 		info.struct_id = STRUCT_TYPE_PE_DOS_STUB;
 		info.struct_data = dos_stub;
-		info.param1 = dos_hdr->e_lfanew - sizeof( IMAGE_DOS_HEADER );
+		info.struct_context = dos_hdr->e_lfanew - sizeof( IMAGE_DOS_HEADER );
 		analyzer->struct_analyze( &info, analyzer->context );
 		
 		info.struct_id = STRUCT_TYPE_PE_NT_HEADER;

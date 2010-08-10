@@ -1,11 +1,13 @@
 LIBRARY pe-master
 
 EXPORTS
-analyze_pe_file
+analyze_pe_file_struct
 check_lib_file_type
 write_to_new_file
-analyze_lib_file
-start_analyze_file
-analyze_pe_file
+write_to_new_file_by_name
+analyze_lib_file_struct
+init_analyzing
+analyze_pe_file_struct
 mem_submem
 open_file_dlg
+release_file_data

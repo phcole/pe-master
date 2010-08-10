@@ -17,14 +17,18 @@ void set_file_analyzer( file_analyzer *analyzer )
 	global_analyzer = analyzer;
 }
 
-int start_analyze_file( CHAR *filename, file_analyzer *analyzer )
+int init_analyzing( CHAR *filename, file_analyzer *analyzer )
 {
 	int ret;
+
 	byte *data;
 	dword data_len;
 
 	ASSERT( NULL != analyzer );
 	ret = read_all_file_data( filename, &data, &data_len );
+	analyzer->all_file_data = data;
+	analyzer->file_data_len = data_len;
+
 	if( 0 != ret )
 	{
 		if( NULL != analyzer->error_handler )
@@ -41,18 +45,17 @@ int start_analyze_file( CHAR *filename, file_analyzer *analyzer )
 	ret = check_file_type( data, data_len );
 	if( PE_FILE_TYPE == ret )
 	{
-		ret = analyze_pe_file( data, data_len, analyzer );
+		ret = analyze_pe_file_struct( data, data_len, analyzer );
 	}
 	else if( LIB_FILE_TYPE == ret )
 	{
-		ret = analyze_lib_file( data, data_len, analyzer  );
+		ret = analyze_lib_file_struct( data, data_len, analyzer  );
 	}
 	else if( COFF_FILE_TYPE == ret )
 	{
-		ret = analyze_coff_file( data, data_len, analyzer );
+		ret = analyze_coff_file_struct( data, data_len, analyzer );
 	}
 
-	release_file_data( data );
 	return ret;
 }
 
