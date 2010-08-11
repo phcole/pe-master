@@ -37,6 +37,8 @@
 CHAR g_szFilter[ MAX_FILTER_LEN ] = { 0 };
 
 #define FIND_SUB_TREE_TRAVERSE 0x01
+#define STRUCT_TYPE_ROOT 0x00
+#define STRUCT_TYPE_COFF_FILE 0x01
 #define LIB_FILE_TITLE "LIB FILE"
 #define LIB_SECTION1_TITLE "SECTION1"
 #define LIB_SECTION2_TITLE "SECTION2"
@@ -224,23 +226,23 @@ int32 add_lib_section_desc( lib_section_hdr *section1, HTREEITEM tree_item, anal
 	return 0;
 }
 
-HTREEITEM find_sub_tree_in_tree( HWND tree_main, HTREEITEM tree_item, char *find_str, dword flags )
+HTREEITEM find_sub_tree_in_tree( HWND tree_main, HTREEITEM tree_item, dword struct_type, dword struct_index, dword flags )
 {
 #define MAX_TREE_ITEM_TITLE_LEN 512
 	int ret;
+	struct_infos *info;
 	HTREEITEM sub_tree;
 	HTREEITEM sib_tree;
 	HTREEITEM ret_tree;
 	TVITEM tv_item;
 	char geted_str[ MAX_TREE_ITEM_TITLE_LEN ];
 
-	ASSERT( NULL != find_str );
 	ASSERT( NULL != tree_item );
 
 	if( TVI_ROOT != tree_item )
 	{
 		memset( &tv_item, 0, sizeof( tv_item ) );
-		tv_item.mask = TVIF_TEXT;
+		tv_item.mask = TVIF_PARAM;
 		tv_item.pszText = geted_str;
 		tv_item.cchTextMax = MAX_TREE_ITEM_TITLE_LEN;
 		tv_item.hItem = tree_item;
@@ -250,9 +252,22 @@ HTREEITEM find_sub_tree_in_tree( HWND tree_main, HTREEITEM tree_item, char *find
 			return NULL;
 		}
 
-		if( 0 == strcmp( tv_item.pszText, find_str ) )
+		if( STRUCT_TYPE_ROOT == struct_type )
 		{
-			return sub_tree;
+			if( STRUCT_TYPE_ROOT == tv_item.lParam )
+			{
+				return sub_tree;
+			}
+		}
+
+		info = ( struct_infos* )tv_item.lParam;
+		if( NULL != info )
+		{
+			if( info->struct_id == struct_type &&
+				info->struct_index == struct_index )
+			{
+				return sub_tree;
+			}
 		}
 	}
 
@@ -263,7 +278,7 @@ HTREEITEM find_sub_tree_in_tree( HWND tree_main, HTREEITEM tree_item, char *find
 	}
 
 	memset( &tv_item, 0, sizeof( tv_item ) );
-	tv_item.mask = TVIF_TEXT;
+	tv_item.mask = TVIF_PARAM;
 	tv_item.pszText = geted_str;
 	tv_item.cchTextMax = MAX_TREE_ITEM_TITLE_LEN;
 	tv_item.hItem = sub_tree;
@@ -273,14 +288,17 @@ HTREEITEM find_sub_tree_in_tree( HWND tree_main, HTREEITEM tree_item, char *find
 		return NULL;
 	}
 
-	if( 0 == strcmp( tv_item.pszText, find_str ) )
+	info = ( struct_infos* )tv_item.lParam;
+
+	if( info->struct_id == struct_type &&
+		info->struct_index == struct_index )
 	{
 		return sub_tree;
 	}
 
 	if( flags & FIND_SUB_TREE_TRAVERSE )
 	{
-		ret_tree = find_sub_tree_in_tree( tree_main, sub_tree, find_str, flags );
+		ret_tree = find_sub_tree_in_tree( tree_main, sub_tree, struct_type, struct_index, flags );
 		if( NULL != ret_tree )
 		{
 			return ret_tree;
@@ -293,7 +311,7 @@ HTREEITEM find_sub_tree_in_tree( HWND tree_main, HTREEITEM tree_item, char *find
 		return NULL;
 	}
 
-	ret_tree = find_sub_tree_in_tree( tree_main, sib_tree, find_str, flags );
+	ret_tree = find_sub_tree_in_tree( tree_main, sib_tree, struct_type, struct_index, flags );
 	if( NULL != ret_tree )
 	{
 		return ret_tree;
@@ -562,7 +580,7 @@ int32 analyze_coff_file_hdr( coff_file_hdr *file_hdr, analyze_context *costext )
 
 	tree_main = costext->tree_main;
 
-	tree_target = find_sub_tree_in_tree( tree_main, TVI_ROOT, LIB_FILE_TITLE, NULL );
+	tree_target = find_sub_tree_in_tree( tree_main, TVI_ROOT, STRUCT_TYPE_ROOT, 0, NULL );
 	if( NULL == tree_target )
 	{
 		tree_sub = insert_text_in_tree( tree_main, TVI_ROOT, COFF_FILE_TITLE, NULL );
@@ -595,7 +613,7 @@ int32 analyze_coff_file_hdr( coff_file_hdr *file_hdr, analyze_context *costext )
 }
 
 
-int32 analyze_lib_section2( lib_section_hdr *section2, analyze_context *context )
+int32 analyze_lib_section2( lib_section_hdr *section2, struct_infos *info, analyze_context *context )
 { 
 	char desc[ MAX_DESC_INFO_LEN ];
 
@@ -607,20 +625,20 @@ int32 analyze_lib_section2( lib_section_hdr *section2, analyze_context *context 
 
 	tree_main = context->tree_main;
 
-	tree_target = find_sub_tree_in_tree( tree_main, TVI_ROOT, LIB_FILE_TITLE, NULL );
+	tree_target = find_sub_tree_in_tree( tree_main, TVI_ROOT, STRUCT_TYPE_ROOT, 0, NULL );
 	if( NULL == tree_target )
 	{
 		return -1;
 	}
 	
-	tree_self = insert_text_in_tree( tree_main, tree_target, LIB_SECTION2_TITLE, ( byte* )section2 );
+	tree_self = insert_text_in_tree( tree_main, tree_target, LIB_SECTION2_TITLE, ( byte* )info );
 	if( NULL == tree_self )
 	{
 		return -1;
 	}
 
 	ret = add_lib_section_desc( section2, tree_self, context );
-	tree_ret = insert_text_in_tree( tree_main, tree_self, "Lib section string table", ( byte* )section2 );
+	tree_ret = insert_text_in_tree( tree_main, tree_self, "Lib section string table", ( byte* )info );
 	if( NULL == tree_ret )
 	{
 		return -1;
@@ -629,7 +647,7 @@ int32 analyze_lib_section2( lib_section_hdr *section2, analyze_context *context 
 	return 0;
 }
 
-int32 analyze_lib_section_longname( lib_section_hdr *section, analyze_context *costext )
+int32 analyze_lib_section_longname( lib_section_hdr *section, struct_infos *info, analyze_context *costext )
 {
 
 	char desc[ MAX_DESC_INFO_LEN ];
@@ -640,13 +658,13 @@ int32 analyze_lib_section_longname( lib_section_hdr *section, analyze_context *c
 
 	tree_main = costext->tree_main;
 
-	tree_target = find_sub_tree_in_tree( tree_main, TVI_ROOT, LIB_FILE_TITLE, 0 );
+	tree_target = find_sub_tree_in_tree( tree_main, TVI_ROOT, STRUCT_TYPE_ROOT, 0, 0 );
 	if( NULL == tree_target )
 	{
 		return -1;
 	}
 
-	tree_sub = insert_text_in_tree( tree_main, tree_target, LIB_LONGNAME_SECTION_TITLE, ( byte* )section );
+	tree_sub = insert_text_in_tree( tree_main, tree_target, LIB_LONGNAME_SECTION_TITLE, ( byte* )info );
 	if( NULL == tree_sub )
 	{
 		return -1;
@@ -655,7 +673,7 @@ int32 analyze_lib_section_longname( lib_section_hdr *section, analyze_context *c
 	return 0;
 }
 
-int32 analyze_lib_section_obj_file( lib_section_hdr *obj_file_sect, dword index, analyze_context *costext )
+int32 analyze_lib_section_obj_file( lib_section_hdr *obj_file_sect, struct_infos *info, analyze_context *costext )
 {
 
 	char desc[ MAX_DESC_INFO_LEN ];
@@ -666,14 +684,14 @@ int32 analyze_lib_section_obj_file( lib_section_hdr *obj_file_sect, dword index,
 
 	tree_main = costext->tree_main;
 
-	tree_target = find_sub_tree_in_tree( tree_main, TVI_ROOT, LIB_FILE_TITLE, 0 );
+	tree_target = find_sub_tree_in_tree( tree_main, TVI_ROOT, STRUCT_TYPE_ROOT, 0, 0 );
 	if( NULL == tree_target )
 	{
 		return -1;
 	}
 
-	sprintf( desc, "%s%d", LIB_OBJ_FILE_SECTION_TITLE, index + 1 );
-	tree_sub = insert_text_in_tree( tree_main, tree_target, desc, ( byte* )obj_file_sect );
+	sprintf( desc, "%s%d", LIB_OBJ_FILE_SECTION_TITLE, info->struct_index + 1 );
+	tree_sub = insert_text_in_tree( tree_main, tree_target, desc, ( byte* )info );
 
 	if( NULL == tree_sub )
 	{
@@ -683,7 +701,7 @@ int32 analyze_lib_section_obj_file( lib_section_hdr *obj_file_sect, dword index,
 	return 0;
 }
 
-int32 analyze_lib_section1( lib_section_hdr *section1, analyze_context *context )
+int32 analyze_lib_section1( lib_section_hdr *section1, struct_infos *info, analyze_context *context )
 {
 	//char desc[ MAX_DESC_INFO_LEN ];
 
@@ -704,7 +722,7 @@ int32 analyze_lib_section1( lib_section_hdr *section1, analyze_context *context 
 		return -1;
 	}
 
-	tree_self = insert_text_in_tree( tree_main, tree_sub, LIB_SECTION1_TITLE, ( byte* )section1 );
+	tree_self = insert_text_in_tree( tree_main, tree_sub, LIB_SECTION1_TITLE, ( byte* )info );
 	if( NULL == tree_self )
 	{
 		return -1;
@@ -712,7 +730,7 @@ int32 analyze_lib_section1( lib_section_hdr *section1, analyze_context *context 
 
 	ret = add_lib_section_desc( section1, tree_self, context );
 
-	tree_ret = insert_text_in_tree( tree_main, tree_self, "Lib section symbol table", ( byte* )section1 );
+	tree_ret = insert_text_in_tree( tree_main, tree_self, "Lib section symbol table", ( byte* )info );
 	if( NULL == tree_ret )
 	{
 		return -1;
@@ -749,22 +767,22 @@ int32 analzye_all_struct( struct_infos *struct_info, void *context )
 		//ret = analyze_pe_optional_hdr( ( PIMAGE_OPTIONAL_HEADER )__struct_info->struct_data, __context );
 		break;
 	case STRUCT_TYPE_LIB_SECTION1:
-		ret = analyze_lib_section1( ( lib_section_hdr* )__struct_info->struct_data, __context );
+		ret = analyze_lib_section1( ( lib_section_hdr* )__struct_info->struct_data, __struct_info, __context );
 		break;
 	case STRUCT_TYPE_LIB_SECTION2:
-		ret = analyze_lib_section2( ( lib_section_hdr* )__struct_info->struct_data, __context );
+		ret = analyze_lib_section2( ( lib_section_hdr* )__struct_info->struct_data, __struct_info,  __context );
 		break;
 	case STRUCT_TYPE_LIB_SECTION_LONGNAME:
-		ret = analyze_lib_section_longname( ( lib_section_hdr* )__struct_info->struct_data, __context );
+		ret = analyze_lib_section_longname( ( lib_section_hdr* )__struct_info->struct_data, __struct_info, __context );
 		break;
 	case STRUCT_TYPE_LIB_SECTION_OBJ_FILE:
-		ret = analyze_lib_section_obj_file( ( lib_section_hdr* )__struct_info->struct_data, __struct_info->struct_context, __context );
+		ret = analyze_lib_section_obj_file( ( lib_section_hdr* )__struct_info->struct_data, __struct_info, __context );
 		break;
 	case STRUCT_TYPE_COFF_FILE_HEADER:
-		ret = analyze_coff_file_hdr( ( coff_file_hdr* )__struct_info->struct_data, __context );
+		//ret = analyze_coff_file_hdr( ( coff_file_hdr* )__struct_info->struct_data, __struct_info, __context );
 		break;
 	case STRUCT_TYPE_COFF_SECTION_HEADER:
-		ret = analyze_coff_section_hdr(  ( coff_sect_hdr* )__struct_info->struct_data, __context );
+		//ret = analyze_coff_section_hdr(  ( coff_sect_hdr* )__struct_info->struct_data, __struct_info, __context );
 		break;
 	default:
 		ASSERT( FALSE );	

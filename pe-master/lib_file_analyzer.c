@@ -107,12 +107,6 @@ int32 analyze_lib_section1_data( byte *data, dword data_len, file_analyzer *anal
 		sym_offset = *( dword* )( syms_offsets );
 		littelendian2bigendian( &sym_offset, sizeof( sym_offset ) );
 		syms_offsets += sizeof( dword );
-
-		//if( NULL != analyzer->syms_analyze )
-		//{
-		//	sym_infos info;
-		//	info.sym_data = 
-		//}
 	}
 	return 0;
 }
@@ -139,7 +133,7 @@ int analyze_sym_idxs( word *syms_idx, dword syms_num )
 	return 0;
 }
 
-int analyze_coff_section2( byte *section2_data, dword data_len )
+int analyze_lib_section2( byte *section2_data, dword data_len )
 {
 	dword obj_sect_num;
 	dword offset;
@@ -239,12 +233,19 @@ int analyze_lib_file_struct( byte *data, dword data_len, file_analyzer *analyzer
 
 	if( NULL != analyzer->struct_analyze )
 	{
-		struct_infos info;
-		info.struct_data = ( byte* )section1;
-		info.struct_id = STRUCT_TYPE_LIB_SECTION1;
-		info.struct_name = "lib file section 1";
+		struct_infos *info;
+		ret = add_new_record_info( &info, sizeof( *info ) );
+		if( 0 > ret )
+		{
+			goto __error;
+		}
 
-		analyzer->struct_analyze( &info, analyzer->context );
+		info->struct_data = ( byte* )section1;
+		info->struct_id = STRUCT_TYPE_LIB_SECTION1;
+		info->struct_index = 0;
+		info->struct_context = analyzer;
+
+		analyzer->struct_analyze( info, analyzer->context );
 	}
 
 	offset += atoi( section1->size );
@@ -262,12 +263,19 @@ int analyze_lib_file_struct( byte *data, dword data_len, file_analyzer *analyzer
 
 	if( NULL != analyzer->struct_analyze )
 	{
-		struct_infos info;
-		info.struct_data = section2;
-		info.struct_id = STRUCT_TYPE_LIB_SECTION2;
-		info.struct_name = "lib file section 2";
+		struct_infos *info;
+		ret = add_new_record_info( &info, sizeof( *info ) );
+		if( 0 > ret )
+		{
+			goto __error;
+		}
 
-		analyzer->struct_analyze( &info, analyzer->context );
+		info->struct_data = section2;
+		info->struct_id = STRUCT_TYPE_LIB_SECTION2;
+		info->struct_index = 0;
+		info->struct_context = analyzer;
+
+		analyzer->struct_analyze( info, analyzer->context );
 	}
 
 	offset += sizeof( lib_section_hdr );
@@ -291,12 +299,19 @@ int analyze_lib_file_struct( byte *data, dword data_len, file_analyzer *analyzer
 
 		if( NULL != analyzer->struct_analyze )
 		{
-			struct_infos info;
-			info.struct_data = long_name_sect;
-			info.struct_id = STRUCT_TYPE_LIB_SECTION_LONGNAME;
-			info.struct_name = "lib file section 1";
+			struct_infos *info;
+			ret = add_new_record_info( &info, sizeof( *info ) );
+			if( 0 > ret )
+			{
+				goto __error;
+			}
 
-			analyzer->struct_analyze( &info, analyzer->context );
+			info->struct_data = long_name_sect;
+			info->struct_id = STRUCT_TYPE_LIB_SECTION_LONGNAME;
+			info->struct_index = 0;
+			info->struct_context = analyzer;
+
+			analyzer->struct_analyze( info, analyzer->context );
 		}
 
 		offset += atoi( long_name_sect->size );
@@ -333,13 +348,19 @@ int analyze_lib_file_struct( byte *data, dword data_len, file_analyzer *analyzer
 
 		if( NULL != analyzer->struct_analyze )
 		{
-			struct_infos info;
-			info.struct_data = ( byte* )obj_file_sect;
-			info.struct_id = STRUCT_TYPE_LIB_SECTION_OBJ_FILE;
-			info.struct_name = NULL;
-			info.struct_context = i;
+			struct_infos *info;
+			ret = add_new_record_info( &info, sizeof( *info ) );
+			if( 0 > ret )
+			{
+				goto __error;
+			}
 
-			analyzer->struct_analyze( &info, analyzer->context );
+			info->struct_data = obj_file_sect;
+			info->struct_id = STRUCT_TYPE_LIB_SECTION_OBJ_FILE;
+			info->struct_index = i;
+			info->struct_context = analyzer;
+
+			analyzer->struct_analyze( info, analyzer->context );
 		}
 
 		if( NULL != analyzer->obj_file_analyze )

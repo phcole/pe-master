@@ -77,6 +77,7 @@ PBYTE find_virt_addr_ptr( PIMAGE_DATA_DIRECTORY dir, PIMAGE_SECTION_HEADER sect_
 
 INT32 analyze_copyright( PIMAGE_DATA_DIRECTORY copyright, PIMAGE_SECTION_HEADER sects, DWORD sect_num, PBYTE data, dword data_len, file_analyzer *analyzer )
 {
+	int32 ret;
 	PBYTE copyright_buf;
 	PBYTE copyright_ptr;
 	PIMAGE_DATA_DIRECTORY finded_sect;
@@ -93,12 +94,18 @@ INT32 analyze_copyright( PIMAGE_DATA_DIRECTORY copyright, PIMAGE_SECTION_HEADER 
 
 	if( NULL != analyzer->struct_analyze )
 	{
-		struct_infos info;
-		info.struct_data = copyright_buf;
-		info.struct_id = STRUCT_TYPE_PE_COPYRIGHT;
-		info.struct_name = "pe copyright";
-		info.struct_context = NULL;
-		analyzer->struct_analyze( &info, analyzer->context );
+		struct_infos *info;
+		ret = add_new_record_info( &info, sizeof( *info ) );
+		if( 0 > ret )
+		{
+			return ret;
+		}
+
+		info->struct_data = copyright_buf;
+		info->struct_id = STRUCT_TYPE_PE_COPYRIGHT;
+		info->struct_index = 0;
+		info->struct_context = analyzer;
+		analyzer->struct_analyze( info, analyzer->context );
 	}
 	return 0;
 }
@@ -234,6 +241,7 @@ INT32 read_import_func_info( DWORD import_name_rva, PIMAGE_SECTION_HEADER sects,
 							dword data_len, file_analyzer *analyzer )
 {
 	INT32 ret;
+	int32 err_count;
 	PIMAGE_THUNK_DATA thunk;
 	PIMAGE_IMPORT_BY_NAME import_info;
 	PIMAGE_SECTION_HEADER finded_sect;
@@ -245,6 +253,7 @@ INT32 read_import_func_info( DWORD import_name_rva, PIMAGE_SECTION_HEADER sects,
 		return -1;
 	}
 
+	err_count = 0;
 	for( ; ; )
 	{
 		__asm
@@ -265,23 +274,31 @@ INT32 read_import_func_info( DWORD import_name_rva, PIMAGE_SECTION_HEADER sects,
 		
 		if( NULL != analyzer->struct_analyze )
 		{
-			struct_infos info;
-			info.struct_data = import_info;
-			info.struct_id = STRUCT_TYPE_PE_IMPORT_BY_NAME;
-			info.struct_name = NULL;
-			info.struct_context = data;
+			struct_infos *info;
+			ret = add_new_record_info( &info, sizeof( *info ) );
+			if( 0 > ret )
+			{
+				err_count ++;
+				continue;
+			}
 
-			analyzer->struct_analyze( &info, analyzer->context );
+			info->struct_data = import_info;
+			info->struct_id = STRUCT_TYPE_PE_IMPORT_BY_NAME;
+			info->struct_index = 0;
+			info->struct_context = analyzer;
+
+			analyzer->struct_analyze( info, analyzer->context );
 		}
 		thunk ++;
 	}
 
-	return 0;
+	return -err_count;
 }
 
 INT32 analyze_import_syms( PIMAGE_DATA_DIRECTORY import_syms, PIMAGE_SECTION_HEADER sects, DWORD sect_num, PBYTE data, dword data_len, file_analyzer *analyzer )
 {
 	INT32 ret;
+	int32 err_count;
 	PIMAGE_IMPORT_DESCRIPTOR import_desc;
 	PIMAGE_SECTION_HEADER finded_sect;
 
@@ -291,6 +308,7 @@ INT32 analyze_import_syms( PIMAGE_DATA_DIRECTORY import_syms, PIMAGE_SECTION_HEA
 		return -1;
 	}
 
+	err_count = 0;
 	for( ; ; )
 	{
 		__asm
@@ -310,23 +328,30 @@ INT32 analyze_import_syms( PIMAGE_DATA_DIRECTORY import_syms, PIMAGE_SECTION_HEA
 		if( NULL != analyzer->struct_analyze )
 		{
 #define STRUCT_TYPE_PE_IMPORT_DESC 0x4d5a0007
-			struct_infos info;
-			info.struct_data = import_desc;
-			info.struct_id = STRUCT_TYPE_PE_IMPORT_DESC;
-			info.struct_name = NULL;
-			info.struct_context = data;
+			struct_infos *info;
+			ret = add_new_record_info( &info, sizeof( *info ) );
+			if( 0 > ret )
+			{
+				err_count ++;
+			}
 
-			analyzer->struct_analyze( &info, analyzer->context );
+			info->struct_data = import_desc;
+			info->struct_id = STRUCT_TYPE_PE_IMPORT_DESC;
+			info->struct_index = 0;
+			info->struct_context = analyzer;
+
+			analyzer->struct_analyze( info, analyzer->context );
 		}
 
 		import_desc ++;
 	}
 
-	return -1;
+	return -err_count;
 }
 
 INT32 read_resource_data( PIMAGE_RESOURCE_DATA_ENTRY res_data, PBYTE sect_data, PIMAGE_RESOURCE_DATA_ENTRY res_data_out, file_analyzer *analyzer )
 {
+	int32 ret;
 	ASSERT( NULL != res_data );
 	ASSERT( NULL != sect_data );
 	ASSERT( NULL != res_data_out );
@@ -341,13 +366,18 @@ INT32 read_resource_data( PIMAGE_RESOURCE_DATA_ENTRY res_data, PBYTE sect_data, 
 	
 	if( NULL != analyzer->struct_analyze )
 	{
-		struct_infos info;
-		info.struct_data = res_data_out;
-		info.struct_id = STRUCT_TYPE_PE_IMPORT_DESC;
-		info.struct_name = NULL;
-		info.struct_context = sect_data;
+		struct_infos *info;
+		ret = add_new_record_info( &info, sizeof( *info ) );
+		if( 0 > ret )
+		{
+			return ret;
+		}
 
-		analyzer->struct_analyze( &info, analyzer->context );
+		info->struct_data = res_data_out;
+		info->struct_id = STRUCT_TYPE_PE_IMPORT_DESC;
+		info->struct_index = 0;
+		info->struct_context = analyzer;
+		analyzer->struct_analyze( info, analyzer->context );
 	}
 
 	return 0;
@@ -357,21 +387,29 @@ int32 analyze_res_dir( PIMAGE_RESOURCE_DIRECTORY res_dir, PBYTE sect_data, PIMAG
 {
 	int32 i;
 	int32 ret;
+	int32 err_count;
 	PIMAGE_RESOURCE_DATA_ENTRY res_data;
 
 	res_data = ( PIMAGE_RESOURCE_DATA_ENTRY )( ( byte* )res_dir + sizeof( IMAGE_RESOURCE_DIRECTORY ) );
+	err_count = 0;
 	for( i = 0; i < res_dir->NumberOfNamedEntries + res_dir->NumberOfIdEntries; i ++ )
 	{
 #define STRUCT_TYPE_PE_RES_DIR 0x4d5a0008
-		struct_infos info;
-		info.struct_data = res_dir;
-		info.struct_id = STRUCT_TYPE_PE_RES_DIR;
-		info.struct_name = "resource data entry";
-		info.struct_context = sect_data;
+		struct_infos *info;
+		ret = add_new_record_info( &info, sizeof( *info ) );
+		if( 0 > ret )
+		{
+			err_count ++;
+		}
 
-		analyzer->struct_analyze( &info, analyzer->context );
+		info->struct_data = res_dir;
+		info->struct_id = STRUCT_TYPE_PE_RES_DIR;
+		info->struct_index = 0;
+		info->struct_context = analyzer;
+
+		analyzer->struct_analyze( info, analyzer->context );
 	}
-	return 0;
+	return -err_count;
 }
 
 #define MAX_RES_NAME_LEN 512
@@ -387,13 +425,19 @@ INT32 read_resource_info( PIMAGE_RESOURCE_DIRECTORY res_dir, PBYTE sect_data, fi
 	if( NULL != analyzer->struct_analyze )
 	{
 #define STRUCT_TYPE_PE_RES_DIR 0x4d5a0008
-		struct_infos info;
-		info.struct_data = res_dir;
-		info.struct_id = STRUCT_TYPE_PE_RES_DIR;
-		info.struct_name = "resource directory";
-		info.struct_context = sect_data;
+		struct_infos *info;
+		ret = add_new_record_info( &info, sizeof( *info ) );
+		if( 0 > ret )
+		{
+			goto __error;
+		}
 
-		analyzer->struct_analyze( &info, analyzer->context );
+		info->struct_data = res_dir;
+		info->struct_id = STRUCT_TYPE_PE_RES_DIR;
+		info->struct_index = 0;
+		info->struct_context = analyzer;
+
+		analyzer->struct_analyze( info, analyzer->context );
 	}
 
 	if( res_entry->DataIsDirectory )
@@ -408,19 +452,29 @@ INT32 read_resource_info( PIMAGE_RESOURCE_DIRECTORY res_dir, PBYTE sect_data, fi
 			if( NULL != analyzer->struct_analyze )
 			{
 #define STRUCT_TYPE_PE_RES_DATA 0x4d5a000c
-				struct_infos info;
-				info.struct_data = res_data;
-				info.struct_id = STRUCT_TYPE_PE_RES_DATA;
-				info.struct_name = "resource directory";
-				info.struct_context = sect_data;
+				struct_infos *info;
+				ret = add_new_record_info( &info, sizeof( *info ) );
+				if( 0 > ret )
+				{
+					goto __error;
+				}
 
-				analyzer->struct_analyze( &info, analyzer->context );
+				info->struct_data = res_data;
+				info->struct_id = STRUCT_TYPE_PE_RES_DATA;
+				info->struct_index = 0;
+				info->struct_context = analyzer;
+
+				analyzer->struct_analyze( info, analyzer->context );
 			}
 		}
 
 		res_entry ++;
 	}
+
 	return 0;
+	
+__error:
+	return -1;
 }
 
 INT32 read_resource_table( PIMAGE_DATA_DIRECTORY resource_table, PIMAGE_SECTION_HEADER sects, DWORD sect_num, PBYTE data, dword data_len, file_analyzer *analyzer )
@@ -443,6 +497,7 @@ INT32 read_resource_table( PIMAGE_DATA_DIRECTORY resource_table, PIMAGE_SECTION_
 
 INT32 analyze_directories( PIMAGE_DATA_DIRECTORY dirs, DWORD dir_num, file_analyzer *analyzer)
 {
+	int32 ret;
 	PIMAGE_DATA_DIRECTORY data_dirs;
 
 	data_dirs = dirs;
@@ -450,13 +505,18 @@ INT32 analyze_directories( PIMAGE_DATA_DIRECTORY dirs, DWORD dir_num, file_analy
 	if( analyzer->struct_analyze )
 	{
 #define STRUCT_TYPE_PE_DATA_DIR 0x4d5a0005
-		struct_infos infos;
-		infos.struct_data = data_dirs;
-		infos.struct_id = STRUCT_TYPE_PE_DATA_DIR;
-		infos.struct_name = "data directory";
-		infos.struct_context = dir_num;
+		struct_infos *info;
+		ret = add_new_record_info( &info, sizeof( *info ) );
+		if( 0 > ret )
+		{
+			return ret;
+		}
 
-		analyzer->struct_analyze( &infos, analyzer->context );
+		info->struct_data = data_dirs;
+		info->struct_id = STRUCT_TYPE_PE_DATA_DIR;
+		info->struct_index = 0;
+		info->struct_context = analyzer;
+		analyzer->struct_analyze( info, analyzer->context );
 	}
 
 	return 0;
@@ -490,24 +550,33 @@ int32 analyze_directories_data( PIMAGE_DATA_DIRECTORY dir, dword index,
 INT32 analyze_sections( PIMAGE_SECTION_HEADER *sects, DWORD sect_num, file_analyzer *analyzer )
 {
 	INT32 i;
+	int32 ret;
+	int32 err_count;
 	PIMAGE_SECTION_HEADER sect_hdr;
 
 	sect_hdr = sects;
 
+	err_count = 0;
 	if( NULL != analyzer->struct_analyze )
 	{
 #define STRUCT_TYPE_PE_SECTION 0x4d5a000d
-		struct_infos infos;
+		struct_infos *info;
 		for( i = 0; i < sect_num; i ++ )
 		{
-			infos.struct_data = sect_hdr;
-			infos.struct_id = STRUCT_TYPE_PE_SECTION;
-			infos.struct_name = NULL;
-			infos.struct_context = NULL;
-			analyzer->struct_analyze( &infos, analyzer->context );
+			ret = add_new_record_info( &info, sizeof( *info ) );
+			if( 0 > ret )
+			{
+				err_count;
+			}
+
+			info->struct_data = sect_hdr;
+			info->struct_id = STRUCT_TYPE_PE_SECTION;
+			info->struct_index = i;
+			info->struct_context = analyzer;
+			analyzer->struct_analyze( info, analyzer->context );
 		}	
 	}
-	return 0;
+	return -err_count;
 }
 
 INT32 analyze_pe_file_struct( byte *data, dword data_len, file_analyzer *analyzer )
@@ -538,7 +607,7 @@ INT32 analyze_pe_file_struct( byte *data, dword data_len, file_analyzer *analyze
 			analyzer->error_handler( &info );
 		}
 		ret = -1;
-		goto error;
+		goto __error;
 	}
 
 	pe_hdr = data;
@@ -557,7 +626,7 @@ INT32 analyze_pe_file_struct( byte *data, dword data_len, file_analyzer *analyze
 		}
 
 		ret = -1;
-		goto error;
+		goto __error;
 	}
 
 	offset += sizeof( IMAGE_DOS_HEADER );
@@ -574,7 +643,7 @@ INT32 analyze_pe_file_struct( byte *data, dword data_len, file_analyzer *analyze
 			analyzer->error_handler( &info );
 		}
 		ret = -1;
-		goto error;
+		goto __error;
 	}
 
 	offset += sizeof( DWORD );
@@ -590,7 +659,7 @@ INT32 analyze_pe_file_struct( byte *data, dword data_len, file_analyzer *analyze
 		}
 
 		ret = -1;
-		goto error;
+		goto __error;
 	}
 
 	if( IMAGE_FILE_MACHINE_I386 != file_hdr->Machine && 
@@ -611,7 +680,7 @@ INT32 analyze_pe_file_struct( byte *data, dword data_len, file_analyzer *analyze
 			analyzer->error_handler( &info );
 		}
 		ret = -1;
-		goto error;
+		goto __error;
 	}
 
 	offset += sizeof( IMAGE_FILE_HEADER );
@@ -628,7 +697,7 @@ INT32 analyze_pe_file_struct( byte *data, dword data_len, file_analyzer *analyze
 		}
 
 		ret = -1;
-		goto error;
+		goto __error;
 	}
 
 	if( IMAGE_SUBSYSTEM_NATIVE != option_hdr->Subsystem && 
@@ -645,29 +714,49 @@ INT32 analyze_pe_file_struct( byte *data, dword data_len, file_analyzer *analyze
 			analyzer->error_handler( &info );
 		}
 		ret = -1;
-		goto error;
+		goto __error;
 	}
 
 	if( NULL == analyzer->struct_analyze )
 	{
-		struct_infos info;
-		info.struct_id = STRUCT_TYPE_PE_DOS_HEADER;
-		info.struct_name = NULL;
-		info.struct_data = ( byte* )dos_hdr;
-		analyzer->struct_analyze( &info, analyzer->context );
+		struct_infos *info;
+		ret = add_new_record_info( &info, sizeof( *info ) );
+		if( 0 > ret )
+		{
+			goto __error;
+		}
+
+		info->struct_data = dos_hdr;
+		info->struct_id = STRUCT_TYPE_PE_DOS_HEADER;
+		info->struct_index = 0;
+		info->struct_context = analyzer;
+		analyzer->struct_analyze( info, analyzer->context );
 		
-		info.struct_id = STRUCT_TYPE_PE_DOS_STUB;
-		info.struct_data = dos_stub;
-		info.struct_context = dos_hdr->e_lfanew - sizeof( IMAGE_DOS_HEADER );
-		analyzer->struct_analyze( &info, analyzer->context );
+		ret = add_new_record_info( &info, sizeof( *info ) );
+		if( 0 > ret )
+		{
+			goto __error;
+		}
+
+		info->struct_data = dos_stub;
+		info->struct_id = STRUCT_TYPE_PE_DOS_STUB;
+		info->struct_index = 0;
+		info->struct_context = analyzer;
+		info->param1 = dos_hdr->e_lfanew - sizeof( IMAGE_DOS_HEADER );
+		analyzer->struct_analyze( info, analyzer->context );
 		
-		info.struct_id = STRUCT_TYPE_PE_NT_HEADER;
-		info.struct_data = ( byte* )file_hdr;
-		analyzer->struct_analyze( &info, analyzer->context );
-		
-		info.struct_id = STRUCT_TYPE_PE_OPTIONAL_HEADER;
-		info.struct_data = ( byte* )option_hdr;
-		analyzer->struct_analyze( &info, analyzer->context );	
+		info->struct_data = ( byte* )file_hdr;
+		info->struct_id = STRUCT_TYPE_PE_NT_HEADER;
+		info->struct_index = 0;
+		info->struct_context = analyzer;
+		analyzer->struct_analyze( info, analyzer->context );
+
+		info->struct_data = ( byte* )option_hdr;
+		info->struct_id = STRUCT_TYPE_PE_OPTIONAL_HEADER;
+		info->struct_index = 0;
+		info->struct_context = analyzer;
+
+		analyzer->struct_analyze( info, analyzer->context );	
 	}
 
 	dir_num = option_hdr->NumberOfRvaAndSizes; //IMAGE_NUMBEROF_DIRECTORY_ENTRIES
@@ -687,7 +776,7 @@ INT32 analyze_pe_file_struct( byte *data, dword data_len, file_analyzer *analyze
 	
 	//read_sections( sect_hdr, file_hdr->NumberOfSections, pe_hdr );
 
-error:
+__error:
 
 	return ret;
 }

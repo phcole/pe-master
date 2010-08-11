@@ -20,6 +20,44 @@
 
 #include "common.h"
 
+dlist *g_all_struct_info = NULL;
+int32 prepare_analyzing()
+{
+	return init_list_element( &g_all_struct_info );
+}
+
+void add_new_record_info( void **info, dword size )
+{
+	int ret;
+	byte *data;
+
+	ASSERT( NULL != info );
+	ASSERT( 0 < size );
+
+	data = ( byte* )malloc( size );
+	if(NULL == data )
+	{
+		*info = NULL;
+		return -1;
+	}
+
+	ret = add_list_element( g_all_struct_info, data );
+	if( 0 > ret )
+	{
+		*info = NULL;
+		return -1;
+	}
+
+	*info = data;
+	return 0;
+}
+
+int32 end_analyzing()
+{
+	ASSERT( NULL != g_all_struct_info );
+	return destroy_list( g_all_struct_info, free_element_on_destroy );
+}
+
 int32 open_file_dlg( HWND owner, char *seled_file_name, dword buff_len, dword flags )
 {
 	int32 ret;
@@ -188,7 +226,12 @@ int read_all_file_data( char *file_name, byte **data, dword *data_len )
 		goto __error;
 	}
 
-	ret = 0;
+	ret = prepare_analyzing();
+	if( 0 > ret )
+	{
+		goto __error;
+	}
+
 	goto __return;
 
 __error:
@@ -213,6 +256,7 @@ __return:
 
 int release_file_data( byte *data )
 {
+	end_analyzing();
 	free( data );
 }
 
@@ -243,3 +287,4 @@ void dump_mem( void *mem, int size )
 		m+=8;
 	}
 }
+
