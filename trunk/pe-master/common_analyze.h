@@ -48,8 +48,10 @@ typedef struct __struct_infos
 {
 	byte *struct_data;
 	dword struct_id;
-	char *struct_name;
+	dword struct_index;
 	dword struct_context;
+	dword param1;
+	dword param2;
 } struct_infos;
 
 typedef struct __error_infos

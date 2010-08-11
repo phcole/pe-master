@@ -24,6 +24,7 @@
 #include <stdio.h>
 #include <conio.h>
 #include <malloc.h>
+#include "dlist.h"
 
 #define callback __stdcall
 

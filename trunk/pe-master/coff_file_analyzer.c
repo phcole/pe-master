@@ -423,14 +423,18 @@ int analyze_coff_file_struct( file_analyzer *analyzer )
 
 	if( NULL != analyzer->struct_analyze )
 	{
-		struct_infos info;
+		struct_infos *info;
+		ret = add_new_record_info( &info, sizeof( *info ) );
+		if( 0 > ret )
+		{
+			goto __error;
+		}
 
-		info.struct_data = ( byte* )file_hdr;
-		info.struct_id = STRUCT_TYPE_COFF_FILE_HEADER;
-		info.struct_name = "coff file header";
-		info.struct_context = data;
-
-		analyzer->struct_analyze( &info, analyzer->context );
+		info->struct_data = ( byte* )file_hdr;
+		info->struct_id = STRUCT_TYPE_COFF_FILE_HEADER;
+		info->struct_index = 0;
+		info->struct_context = analyzer;
+		analyzer->struct_analyze( info, analyzer->context );
 	}
 
 	sym_ent_table = data + file_hdr->syms_offset;
@@ -446,14 +450,18 @@ int analyze_coff_file_struct( file_analyzer *analyzer )
 		opt_hdr = ( coff_opt_hdr28* )( data + offset );
 		if( NULL != analyzer->struct_analyze )
 		{
-			struct_infos info;
+			struct_infos *info;
+			ret = add_new_record_info( &info, sizeof( *info ) );
+			if( 0 > ret )
+			{
+				goto __error;
+			}
 
-			info.struct_data = ( byte* )opt_hdr;
-			info.struct_id = STRUCT_TYPE_COFF_OPTIONAL_28_HEADER;
-			info.struct_name = "coff optional 28 header";
-			info.struct_context = data;
-
-			analyzer->struct_analyze( &info, analyzer->context );
+			info->struct_data = ( byte* )opt_hdr;
+			info->struct_id = STRUCT_TYPE_COFF_OPTIONAL_28_HEADER;
+			info->struct_index = 0;
+			info->struct_context = analyzer;
+			analyzer->struct_analyze( info, analyzer->context );
 		}
 	}
 
@@ -471,14 +479,18 @@ int analyze_coff_file_struct( file_analyzer *analyzer )
 
 		if( NULL != analyzer->struct_analyze )
 		{
-			struct_infos info;
+			struct_infos *info;
+			ret = add_new_record_info( &info, sizeof( *info ) );
+			if( 0 > ret )
+			{
+				goto __error;
+			}
 
-			info.struct_data = ( byte* )sect_hdr;
-			info.struct_id = STRUCT_TYPE_COFF_SECTION_HEADER;
-			info.struct_name = "coff section header";
-			info.struct_context = data;
-
-			analyzer->struct_analyze( &info, analyzer->context );
+			info->struct_data = ( byte* )sect_hdr;
+			info->struct_id = STRUCT_TYPE_COFF_SECTION_HEADER;
+			info->struct_index = 0;
+			info->struct_context = analyzer;
+			analyzer->struct_analyze( info, analyzer->context );
 		}
 
 		sect_relocs = ( coff_reloc* )( data + sect_hdr->sect_rel_offset );
@@ -515,4 +527,7 @@ int analyze_coff_file_struct( file_analyzer *analyzer )
 	}
 
 	return 0;
+
+__error:
+	return ret;
 }
