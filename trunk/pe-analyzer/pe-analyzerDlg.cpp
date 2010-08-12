@@ -37,8 +37,9 @@
 CHAR g_szFilter[ MAX_FILTER_LEN ] = { 0 };
 
 #define FIND_SUB_TREE_TRAVERSE 0x01
-#define STRUCT_TYPE_ROOT 0x00
-#define STRUCT_TYPE_COFF_FILE 0x01
+#define STRUCT_TYPE_PE_FILE 0x4d5a
+#define STRUCT_TYPE_LIB_FILE 0x600a
+#define STRUCT_TYPE_COFF_FILE 0x041c
 #define LIB_FILE_TITLE "LIB FILE"
 #define LIB_SECTION1_TITLE "SECTION1"
 #define LIB_SECTION2_TITLE "SECTION2"
@@ -203,7 +204,7 @@ int32 add_lib_section_desc( lib_section_hdr *section1, HTREEITEM tree_item, anal
 	HWND tree_main;
 	HTREEITEM tree_ret;
 
-	tree_main = context->tree_main;
+	tree_main = context->tree_detail;
 
 	sprintf( desc, "0x%0.8x Section group id: %s", ( ( byte* )&section1->group_id[ 0 ] - context->analyzer.all_file_data ), section1->group_id );
 	tree_ret = insert_text_in_tree( tree_main, tree_item, desc, NULL );
@@ -243,18 +244,32 @@ HTREEITEM find_sub_tree_in_tree( HWND tree_main, HTREEITEM tree_item, dword stru
 	{
 		memset( &tv_item, 0, sizeof( tv_item ) );
 		tv_item.mask = TVIF_PARAM;
-		tv_item.pszText = geted_str;
-		tv_item.cchTextMax = MAX_TREE_ITEM_TITLE_LEN;
+		//tv_item.pszText = geted_str;
+		//tv_item.cchTextMax = MAX_TREE_ITEM_TITLE_LEN;
 		tv_item.hItem = tree_item;
 		ret = TreeView_GetItem( tree_main, &tv_item );
 		if( FALSE == ret )
 		{
 			return NULL;
 		}
-
-		if( STRUCT_TYPE_ROOT == struct_type )
+		
+		if( STRUCT_TYPE_PE_FILE == struct_type )
 		{
-			if( STRUCT_TYPE_ROOT == tv_item.lParam )
+			if( STRUCT_TYPE_PE_FILE == tv_item.lParam )
+			{
+				return sub_tree;
+			}
+		}
+		else if( STRUCT_TYPE_LIB_FILE == struct_type )
+		{
+			if( STRUCT_TYPE_LIB_FILE == tv_item.lParam )
+			{
+				return sub_tree;
+			}
+		}
+		else if( STRUCT_TYPE_COFF_FILE == struct_type )
+		{
+			if( STRUCT_TYPE_COFF_FILE == tv_item.lParam )
 			{
 				return sub_tree;
 			}
@@ -279,8 +294,8 @@ HTREEITEM find_sub_tree_in_tree( HWND tree_main, HTREEITEM tree_item, dword stru
 
 	memset( &tv_item, 0, sizeof( tv_item ) );
 	tv_item.mask = TVIF_PARAM;
-	tv_item.pszText = geted_str;
-	tv_item.cchTextMax = MAX_TREE_ITEM_TITLE_LEN;
+	//tv_item.pszText = geted_str;
+	//tv_item.cchTextMax = MAX_TREE_ITEM_TITLE_LEN;
 	tv_item.hItem = sub_tree;
 	ret = TreeView_GetItem( tree_main, &tv_item );
 	if( FALSE == ret )
@@ -288,12 +303,36 @@ HTREEITEM find_sub_tree_in_tree( HWND tree_main, HTREEITEM tree_item, dword stru
 		return NULL;
 	}
 
-	info = ( struct_infos* )tv_item.lParam;
-
-	if( info->struct_id == struct_type &&
-		info->struct_index == struct_index )
+	if( STRUCT_TYPE_PE_FILE == struct_type )
 	{
-		return sub_tree;
+		if( STRUCT_TYPE_PE_FILE == tv_item.lParam )
+		{
+			return sub_tree;
+		}
+	}
+	else if( STRUCT_TYPE_LIB_FILE == struct_type )
+	{
+		if( STRUCT_TYPE_LIB_FILE == tv_item.lParam )
+		{
+			return sub_tree;
+		}
+	}
+	else if( STRUCT_TYPE_COFF_FILE == struct_type )
+	{
+		if( STRUCT_TYPE_COFF_FILE == tv_item.lParam )
+		{
+			return sub_tree;
+		}
+	}
+
+	info = ( struct_infos* )tv_item.lParam;
+	if( NULL != info )
+	{
+		if( info->struct_id == struct_type &&
+			info->struct_index == struct_index )
+		{
+			return sub_tree;
+		}
 	}
 
 	if( flags & FIND_SUB_TREE_TRAVERSE )
@@ -580,7 +619,7 @@ int32 analyze_coff_file_hdr( coff_file_hdr *file_hdr, analyze_context *costext )
 
 	tree_main = costext->tree_main;
 
-	tree_target = find_sub_tree_in_tree( tree_main, TVI_ROOT, STRUCT_TYPE_ROOT, 0, NULL );
+	tree_target = find_sub_tree_in_tree( tree_main, TVI_ROOT, STRUCT_TYPE_COFF_FILE, 0, NULL );
 	if( NULL == tree_target )
 	{
 		tree_sub = insert_text_in_tree( tree_main, TVI_ROOT, COFF_FILE_TITLE, NULL );
@@ -625,7 +664,7 @@ int32 analyze_lib_section2( lib_section_hdr *section2, struct_infos *info, analy
 
 	tree_main = context->tree_main;
 
-	tree_target = find_sub_tree_in_tree( tree_main, TVI_ROOT, STRUCT_TYPE_ROOT, 0, NULL );
+	tree_target = find_sub_tree_in_tree( tree_main, TVI_ROOT, STRUCT_TYPE_LIB_FILE, 0, NULL );
 	if( NULL == tree_target )
 	{
 		return -1;
@@ -658,7 +697,7 @@ int32 analyze_lib_section_longname( lib_section_hdr *section, struct_infos *info
 
 	tree_main = costext->tree_main;
 
-	tree_target = find_sub_tree_in_tree( tree_main, TVI_ROOT, STRUCT_TYPE_ROOT, 0, 0 );
+	tree_target = find_sub_tree_in_tree( tree_main, TVI_ROOT, STRUCT_TYPE_LIB_FILE, 0, 0 );
 	if( NULL == tree_target )
 	{
 		return -1;
@@ -684,7 +723,7 @@ int32 analyze_lib_section_obj_file( lib_section_hdr *obj_file_sect, struct_infos
 
 	tree_main = costext->tree_main;
 
-	tree_target = find_sub_tree_in_tree( tree_main, TVI_ROOT, STRUCT_TYPE_ROOT, 0, 0 );
+	tree_target = find_sub_tree_in_tree( tree_main, TVI_ROOT, STRUCT_TYPE_LIB_FILE, 0, 0 );
 	if( NULL == tree_target )
 	{
 		return -1;
@@ -712,10 +751,9 @@ int32 analyze_lib_section1( lib_section_hdr *section1, struct_infos *info, analy
 	HTREEITEM tree_self;
 	HTREEITEM tree_ret;
 
-
 	tree_main = context->tree_main;
 
-	tree_sub = insert_text_in_tree( tree_main, TVI_ROOT, LIB_FILE_TITLE, NULL );
+	tree_sub = insert_text_in_tree( tree_main, TVI_ROOT, LIB_FILE_TITLE, ( byte* )STRUCT_TYPE_LIB_FILE );
 
 	if( NULL == tree_sub )
 	{
@@ -728,14 +766,11 @@ int32 analyze_lib_section1( lib_section_hdr *section1, struct_infos *info, analy
 		return -1;
 	}
 
-	ret = add_lib_section_desc( section1, tree_self, context );
-
 	tree_ret = insert_text_in_tree( tree_main, tree_self, "Lib section symbol table", ( byte* )info );
 	if( NULL == tree_ret )
 	{
 		return -1;
 	}
-
 	return 0;
 }
 
@@ -945,14 +980,55 @@ int32 on_detail_tree_item_seled( HTREEITEM item_seled, file_analyzer *analyzer )
 	return 0;
 }
 
+#define ptr_is_struct_infos( ptr ) ( 0xffff0000 & ( dword )ptr ) 
 int32 on_main_tree_item_seled( HTREEITEM item_seled, file_analyzer *analyzer )
 {
+	int32 ret;
+	HWND tree_main;
+	TVITEM tv_item;
 	analyze_context *context;
+	struct_infos *info;
+
+	ASSERT( NULL != item_seled );
+	ASSERT( TVI_ROOT != item_seled );
+	ASSERT( NULL != analyzer );
+	ASSERT( NULL != analyzer->context );
 
 	context = ( analyze_context* )analyzer->context;
 
-	
-	return 0;
+	tree_main = context->tree_main;
+
+	memset( &tv_item, 0, sizeof( tv_item ) );
+	tv_item.mask = TVIF_PARAM;
+	//tv_item.pszText = geted_str;
+	//tv_item.cchTextMax = MAX_TREE_ITEM_TITLE_LEN;
+	tv_item.hItem = item_seled;
+	ret = TreeView_GetItem( tree_main, &tv_item );
+	if( FALSE == ret )
+	{
+		return -1;
+	}
+
+	info = ( struct_infos* )tv_item.lParam;
+
+	if( NULL == info )
+	{
+		return -1;
+	}
+
+	if( ptr_is_struct_infos( info ) )
+	{
+		switch( info->struct_id )
+		{
+		case STRUCT_TYPE_LIB_SECTION1:
+			ret = add_lib_section_desc( ( lib_section_hdr* )info->struct_data, TVI_ROOT, context );
+			break;
+		default:
+			break;
+		}
+	}
+
+	return ret;
 }
 
 dword CALLBACK thread_analyze_file( LPVOID param )
@@ -1144,7 +1220,7 @@ void CpeanalyzerDlg::OnTvnSelchangedTreeMain(NMHDR *pNMHDR, LRESULT *pResult)
 	LPNMTREEVIEW pNMTreeView = reinterpret_cast<LPNMTREEVIEW>(pNMHDR);
 	// TODO: 在此添加控件通知处理程序代码
 
-	ret = PostThreadMessage( analyzing_context.thread_id, WM_MAIN_TREE_ITEM_SELED, ( WPARAM )&pNMTreeView->itemOld, ( LPARAM )&pNMTreeView->itemNew );
+	ret = PostThreadMessage( analyzing_context.thread_id, WM_MAIN_TREE_ITEM_SELED, ( WPARAM )NULL, ( LPARAM )pNMTreeView->itemNew.hItem );
 	if( FALSE == ret )
 	{
 		exit_work_thread( &analyzing_context );
