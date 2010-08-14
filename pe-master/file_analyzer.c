@@ -42,18 +42,18 @@ int init_analyzing( CHAR *filename, file_analyzer *analyzer )
 		return -1;
 	}
 
-	ret = check_file_type( data, data_len );
-	if( PE_FILE_TYPE == ret )
+	analyzer->file_type = check_file_type( data, data_len );
+	if( PE_FILE_TYPE == analyzer->file_type )
 	{
 		ret = analyze_pe_file_struct( data, data_len, analyzer );
 	}
-	else if( LIB_FILE_TYPE == ret )
+	else if( LIB_FILE_TYPE == analyzer->file_type )
 	{
 		ret = analyze_lib_file_struct( data, data_len, analyzer  );
 	}
-	else if( COFF_FILE_TYPE == ret )
+	else if( COFF_FILE_TYPE == analyzer->file_type )
 	{
-		ret = analyze_coff_file_struct( data, data_len, analyzer );
+		ret = analyze_coff_file_struct( data, data_len, 0, analyzer );
 	}
 
 	return ret;

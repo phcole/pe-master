@@ -360,13 +360,11 @@ int coff_section_relocs_analyze( coff_sect_hdr *sect_hdr, byte data, dword data_
 	return 0;
 }
 
-int analyze_coff_file_struct( file_analyzer *analyzer )
+int analyze_coff_file_struct( byte *data, dword data_len, dword file_index, file_analyzer *analyzer )
 {
 	int ret;
 	int i;
 	int j;
-	byte *data;
-	dword data_len;
 	coff_file_hdr *file_hdr;
 	coff_sect_hdr *sect_hdr;
 	byte *opt_hdr;
@@ -385,9 +383,6 @@ int analyze_coff_file_struct( file_analyzer *analyzer )
 	char *sym_name;
 	char *code_name;
 	char *ln_sym_name;
-	
-	data = analyzer->all_file_data;
-	data_len = analyzer->file_data_len;
 
 	offset = 0;
 
@@ -420,7 +415,6 @@ int analyze_coff_file_struct( file_analyzer *analyzer )
 
 	assert( I386_COFF_FILE_MAGIC == file_hdr->magic );
 
-
 	if( NULL != analyzer->struct_analyze )
 	{
 		struct_infos *info;
@@ -433,6 +427,7 @@ int analyze_coff_file_struct( file_analyzer *analyzer )
 		info->struct_data = ( byte* )file_hdr;
 		info->struct_id = STRUCT_TYPE_COFF_FILE_HEADER;
 		info->struct_index = 0;
+		info->param3 = file_index;
 		info->struct_context = analyzer;
 		analyzer->struct_analyze( info, analyzer->context );
 	}
@@ -460,6 +455,7 @@ int analyze_coff_file_struct( file_analyzer *analyzer )
 			info->struct_data = ( byte* )opt_hdr;
 			info->struct_id = STRUCT_TYPE_COFF_OPTIONAL_28_HEADER;
 			info->struct_index = 0;
+			info->param3 = file_index;
 			info->struct_context = analyzer;
 			analyzer->struct_analyze( info, analyzer->context );
 		}
@@ -488,7 +484,8 @@ int analyze_coff_file_struct( file_analyzer *analyzer )
 
 			info->struct_data = ( byte* )sect_hdr;
 			info->struct_id = STRUCT_TYPE_COFF_SECTION_HEADER;
-			info->struct_index = 0;
+			info->struct_index = i;
+			info->param3 = file_index;
 			info->struct_context = analyzer;
 			analyzer->struct_analyze( info, analyzer->context );
 		}
@@ -504,26 +501,41 @@ int analyze_coff_file_struct( file_analyzer *analyzer )
 	str_table_len = str_table->size - sizeof( dword );
 	str_offset = 0;
 
-	for(; ; )
+	//if( NULL != analyzer->strs_analyze )
+	//{
+	//	sym_infos sym_info;
+	//	sym_info.sym_data = NULL;
+	//	sym_info.sym_data_len = 0;
+	//	sym_info.sym_name = string;
+
+	//	analyzer->strs_analyze( &sym_info, analyzer->context );
+	//}
+
+	//str_offset += strlen( string ) + sizeof( char );
+	//string += strlen( string ) + sizeof( char );
+
+	//assert( str_offset <= str_table_len );
+	//if( str_offset == str_table_len )
+	//{
+	//	break;
+	//}
+
+	if( NULL != analyzer->struct_analyze )
 	{
-		if( NULL != analyzer->strs_analyze )
+		struct_infos *info;
+		ret = add_new_record_info( &info, sizeof( *info ) );
+		if( 0 > ret )
 		{
-			sym_infos sym_info;
-			sym_info.sym_data = NULL;
-			sym_info.sym_data_len = 0;
-			sym_info.sym_name = string;
-
-			analyzer->strs_analyze( &sym_info, analyzer->context );
+			goto __error;
 		}
 
-		str_offset += strlen( string ) + sizeof( char );
-		string += strlen( string ) + sizeof( char );
-
-		assert( str_offset <= str_table_len );
-		if( str_offset == str_table_len )
-		{
-			break;
-		}
+		info->struct_data = ( byte* )string;
+		info->struct_id = STRUCT_TYPE_COFF_STR_TABLE;
+		info->struct_index = 0;
+		info->param1 = str_table_len;
+		info->param3 = file_index;
+		info->struct_context = analyzer;
+		analyzer->struct_analyze( info, analyzer->context );
 	}
 
 	return 0;

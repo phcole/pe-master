@@ -559,7 +559,6 @@ INT32 analyze_sections( PIMAGE_SECTION_HEADER *sects, DWORD sect_num, file_analy
 	err_count = 0;
 	if( NULL != analyzer->struct_analyze )
 	{
-#define STRUCT_TYPE_PE_SECTION 0x4d5a000d
 		struct_infos *info;
 		for( i = 0; i < sect_num; i ++ )
 		{
@@ -597,7 +596,7 @@ INT32 analyze_pe_file_struct( byte *data, dword data_len, file_analyzer *analyze
 	ASSERT( 0 < data_len );
 	ASSERT( NULL != analyzer );
 
-	if( sizeof( dword ) < data_len )
+	if( sizeof( dword ) > data_len )
 	{
 		if( NULL != analyzer->error_handler )
 		{
@@ -717,7 +716,7 @@ INT32 analyze_pe_file_struct( byte *data, dword data_len, file_analyzer *analyze
 		goto __error;
 	}
 
-	if( NULL == analyzer->struct_analyze )
+	if( NULL != analyzer->struct_analyze )
 	{
 		struct_infos *info;
 		ret = add_new_record_info( &info, sizeof( *info ) );
@@ -745,11 +744,23 @@ INT32 analyze_pe_file_struct( byte *data, dword data_len, file_analyzer *analyze
 		info->param1 = dos_hdr->e_lfanew - sizeof( IMAGE_DOS_HEADER );
 		analyzer->struct_analyze( info, analyzer->context );
 		
+		ret = add_new_record_info( &info, sizeof( *info ) );
+		if( 0 > ret )
+		{
+			goto __error;
+		}
+
 		info->struct_data = ( byte* )file_hdr;
 		info->struct_id = STRUCT_TYPE_PE_NT_HEADER;
 		info->struct_index = 0;
 		info->struct_context = analyzer;
 		analyzer->struct_analyze( info, analyzer->context );
+
+		ret = add_new_record_info( &info, sizeof( *info ) );
+		if( 0 > ret )
+		{
+			goto __error;
+		}
 
 		info->struct_data = ( byte* )option_hdr;
 		info->struct_id = STRUCT_TYPE_PE_OPTIONAL_HEADER;
