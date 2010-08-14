@@ -24,7 +24,6 @@
 #include <stdio.h>
 #include <conio.h>
 #include <malloc.h>
-#include "dlist.h"
 
 #define callback __stdcall
 
@@ -47,16 +46,19 @@ typedef unsigned char byte;
 typedef unsigned short word;
 typedef int int32;
 
+#include "dlist.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+void *find_record_info( void *info, list_ele_compare compare_func );
 void littelendian2bigendian( byte *p, size_t size );
 int write_to_new_file( char *file_path, char *file_name, byte *data, dword data_len );
 int write_to_new_file_by_name( char *file_name, byte *data, dword data_len );
 int32 read_all_file_data( char *file_name, byte **data, dword *data_len );
 int32 mem_submem( byte* target_cont, int32 target_cont_len, byte* src_mem, int32 src_mem_len);
-void dump_mem( void *mem, int size );
+int dump_mem( void *mem, int size, char*str_out, dword *buff_len );
 int release_file_data( byte *data );
 int32 open_file_dlg( HWND owner, char *seled_file_name, dword buff_len, dword flags );
 

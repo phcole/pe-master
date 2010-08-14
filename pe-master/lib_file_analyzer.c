@@ -172,6 +172,7 @@ int32 analyze_long_section_data( byte *data, dword data_len )
 int analyze_lib_file_struct( byte *data, dword data_len, file_analyzer *analyzer )
 {
 	int ret = 0;
+	lib_section_hdr sect_copy;
 	lib_section_hdr *section1;
 	lib_section_hdr *section2;
 	dword sym_offset;
@@ -226,14 +227,19 @@ int analyze_lib_file_struct( byte *data, dword data_len, file_analyzer *analyzer
 
 	offset += CONST_STR_LEN( LIB_FILE_HEADER );
 	section1 = ( lib_section_hdr* )( data + offset );
+	offset += sizeof( lib_section_hdr );
 
-	clean_hdr_filled_bytes( section1 );
-	ASSERT( 0 == strcmp( section1->name, "/" ) );
-	ASSERT( 0 == memcmp( section1->end_of_header, LIB_SECT_HDR_END_SIGN, CONST_STR_LEN( LIB_SECT_HDR_END_SIGN ) ) );
+	sect_copy = *section1;
+
+	clean_hdr_filled_bytes( &sect_copy );
+	ASSERT( 0 == strcmp( sect_copy.name, "/" ) );
+	ASSERT( 0 == memcmp( sect_copy.end_of_header, LIB_SECT_HDR_END_SIGN, CONST_STR_LEN( LIB_SECT_HDR_END_SIGN ) ) );
 
 	if( NULL != analyzer->struct_analyze )
 	{
 		struct_infos *info;
+		byte *__offset;
+		dword data_size;
 		ret = add_new_record_info( &info, sizeof( *info ) );
 		if( 0 > ret )
 		{
@@ -246,9 +252,44 @@ int analyze_lib_file_struct( byte *data, dword data_len, file_analyzer *analyzer
 		info->struct_context = analyzer;
 
 		analyzer->struct_analyze( info, analyzer->context );
+
+		__offset = ( byte* )section1 + sizeof( lib_section_hdr );
+		ret = add_new_record_info( &info, sizeof( *info ) );
+		if( 0 > ret )
+		{
+			goto __error;
+		}
+
+		info->param1 = *( dword* )__offset;
+		littelendian2bigendian( &info->param1, sizeof( info->param1 ) );
+
+		info->struct_data = __offset + sizeof( dword ); ;
+		info->struct_id = STRUCT_TYPE_SYM_TABLE;
+		info->struct_index = 0;
+		info->struct_context = analyzer;
+
+		__offset += info->param1 * sizeof( dword ) + sizeof( dword );
+		analyzer->struct_analyze( info, analyzer->context );
+
+		ret = add_new_record_info( &info, sizeof( *info ) );
+		if( 0 > ret )
+		{
+			goto __error;
+		}
+
+		data_size = atoi( sect_copy.size );
+
+		info->param1 = data_size - ( __offset - ( ( byte* )section1 + sizeof( lib_section_hdr ) ) );
+		ASSERT( info->param1 > 0 );
+		info->struct_data = __offset;
+		info->struct_id = STRUCT_TYPE_SECTION1_STR_TABLE;
+		info->struct_index = 0;
+		info->struct_context = analyzer;
+
+		analyzer->struct_analyze( info, analyzer->context );
 	}
 
-	offset += atoi( section1->size );
+	offset += atoi( sect_copy.size );
 
 	section2 = ( lib_section_hdr* )( data + offset );
 
@@ -258,12 +299,16 @@ int analyze_lib_file_struct( byte *data, dword data_len, file_analyzer *analyzer
 		return -1;
 	}
 
-	clean_hdr_filled_bytes( section2 );
-	assert( 0 == strcmp( section2->name, "/" ) ); 
+	sect_copy = *section2;
+	clean_hdr_filled_bytes( &sect_copy );
+	assert( 0 == strcmp( sect_copy.name, "/" ) ); 
 
 	if( NULL != analyzer->struct_analyze )
 	{
 		struct_infos *info;
+		byte *__offset;
+		dword data_size;
+
 		ret = add_new_record_info( &info, sizeof( *info ) );
 		if( 0 > ret )
 		{
@@ -276,23 +321,79 @@ int analyze_lib_file_struct( byte *data, dword data_len, file_analyzer *analyzer
 		info->struct_context = analyzer;
 
 		analyzer->struct_analyze( info, analyzer->context );
+
+		ret = add_new_record_info( &info, sizeof( *info ) );
+		if( 0 > ret )
+		{
+			goto __error;
+		}
+
+		__offset = ( byte* )section2 + sizeof( lib_section_hdr );
+		info->param1 = *( dword* )__offset;
+		//littelendian2bigendian( &info->param1, sizeof( info->param1 ) );
+		info->struct_data = __offset + sizeof( dword ); ;
+		info->struct_id = STRUCT_TYPE_OBJ_OFFSETS;
+		info->struct_index = 0;
+		info->struct_context = analyzer;
+
+		__offset += info->param1 * sizeof( dword ) + sizeof( dword );
+
+		analyzer->struct_analyze( info, analyzer->context );
+
+		ret = add_new_record_info( &info, sizeof( *info ) );
+		if( 0 > ret )
+		{
+			goto __error;
+		}
+
+		info->param1 = *( dword* )__offset;
+		//littelendian2bigendian( &info->param1, sizeof( info->param1 ) );
+		info->struct_data = __offset + sizeof( dword ); ;
+		info->struct_id = STRUCT_TYPE_SYM_INDEXES;
+		info->struct_index = 0;
+		info->struct_context = analyzer;
+
+		__offset += info->param1 * sizeof( dword ) + sizeof( dword );
+		analyzer->struct_analyze( info, analyzer->context );
+
+		ret = add_new_record_info( &info, sizeof( *info ) );
+		if( 0 > ret )
+		{
+			goto __error;
+		}
+
+		data_size = atoi( sect_copy.size );
+
+		//littelendian2bigendian( &data_size, sizeof( data_size ) );
+
+		info->param1 = data_size - ( __offset - ( ( byte* )section2 + sizeof( lib_section_hdr ) ) );
+		ASSERT( info->param1 > 0 );
+		info->struct_data = __offset;
+		info->struct_id = STRUCT_TYPE_SECTION2_STR_TABLE;
+		info->struct_index = 0;
+		info->struct_context = analyzer;
+
+		analyzer->struct_analyze( info, analyzer->context );
 	}
 
 	offset += sizeof( lib_section_hdr );
 
 	obj_sect_num = *( dword* )( data + offset );
-	offset += atoi( section2->size );
+	offset += atoi( sect_copy.size );
 	
 	long_name_sect = ( lib_section_hdr* )( data + offset );
+
 	ret = locate_next_sect( &long_name_sect, &offset, data_len );
 	if( 0 > ret )
 	{
 		return -1;
 	}
-	clean_hdr_filled_bytes( long_name_sect );
+
+	sect_copy = *long_name_sect;
+	clean_hdr_filled_bytes( &sect_copy );
 
 	long_name_sect_strings = NULL;
-	if( 0 == strcmp( long_name_sect->name, "//" ) )
+	if( 0 == strcmp( sect_copy.name, "//" ) )
 	{
 		offset += sizeof( lib_section_hdr );
 		long_name_sect_strings = data + offset + sizeof( dword );
@@ -312,9 +413,24 @@ int analyze_lib_file_struct( byte *data, dword data_len, file_analyzer *analyzer
 			info->struct_context = analyzer;
 
 			analyzer->struct_analyze( info, analyzer->context );
+
+			ret = add_new_record_info( &info, sizeof( *info ) );
+			if( 0 > ret )
+			{
+				goto __error;
+			}
+
+			info->struct_data = ( byte* )long_name_sect + sizeof( lib_section_hdr ) + sizeof( dword ); ;
+			info->struct_id = STRUCT_TYPE_LONGNAME_SECTION_STR_TABLE;
+			info->struct_index = 0;
+			info->struct_context = analyzer;
+			info->param1 = *( dword* )( ( byte* )long_name_sect + sizeof( lib_section_hdr ) );
+			//littelendian2bigendian( &info->param1, sizeof( info->param1 ) );
+
+			analyzer->struct_analyze( info, analyzer->context );
 		}
 
-		offset += atoi( long_name_sect->size );
+		offset += atoi( sect_copy.size );
 	}
 	
 	for( i = 0; i < obj_sect_num; i ++ )
@@ -327,23 +443,24 @@ int analyze_lib_file_struct( byte *data, dword data_len, file_analyzer *analyzer
 			return -1;
 		}
 
-		clean_hdr_filled_bytes( obj_file_sect );
+		sect_copy = *obj_file_sect;
+		clean_hdr_filled_bytes( &sect_copy );
 
 		if( obj_file_sect->name[0] ==  '/' )
 		{
-			obj_file_name_offset = atoi( &obj_file_sect->name[ 1 ] );
+			obj_file_name_offset = atoi( &sect_copy.name[ 1 ] );
 			obj_file_name = &long_name_sect_strings[ obj_file_name_offset ];
 		}
 		else
 		{
 			char *obj_file_name_end;
-			obj_file_name_end = strchr( obj_file_sect->name, '/' );
+			obj_file_name_end = strchr( sect_copy.name, '/' );
 			if( NULL != obj_file_name_end )
 			{
 				*obj_file_name_end = '\0';
 			}
 
-			obj_file_name = obj_file_sect->name;
+			obj_file_name = sect_copy.name;
 		}
 
 		if( NULL != analyzer->struct_analyze )

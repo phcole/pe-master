@@ -79,3 +79,37 @@ int32 check_file_type( byte *data, dword data_len )
 
 	return -1;
 }
+
+int32 callback compare_struct_info( void *element1, void *element2 )
+{
+	struct_infos *info1;
+	struct_infos *info2;
+
+	ASSERT( NULL != element1 );
+	ASSERT( NULL != element2 );
+
+	info1 = ( struct_infos* )element1;
+	info2 = ( struct_infos* )element2;
+
+	if( info1->struct_id == info2->struct_id && info1->struct_index == info2->struct_index )
+	{
+		return 0;
+	}
+
+	return -1;
+}
+
+struct_infos *find_struct_info_by_id( dword type, dword index )
+{
+	struct_infos info;
+	info.struct_id = type;
+	info.struct_index = index;
+
+	return find_struct_info( &info );
+}
+
+struct_infos *find_struct_info( struct_infos *info )
+{
+	return ( struct_infos* )find_record_info( ( void* )info, compare_struct_info );
+}
+

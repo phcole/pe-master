@@ -52,6 +52,11 @@ void add_new_record_info( void **info, dword size )
 	return 0;
 }
 
+void *find_record_info( void *info, list_ele_compare compare_func )
+{
+	return find_list_element_by_compare( g_all_struct_info, info, compare_func );
+}
+
 int32 end_analyzing()
 {
 	ASSERT( NULL != g_all_struct_info );
@@ -260,11 +265,21 @@ int release_file_data( byte *data )
 	free( data );
 }
 
-void dump_mem( void *mem, int size )
+int32 dump_mem( void *mem, int size, char*str_out, dword *buff_len )
 {
+	int ret;
+	dword out_len;
+	byte dump_str[ 256 ];
+	char *str_cur;
 	unsigned char str[20];
 	unsigned char *m = mem;
 	int i,j;
+
+	ASSERT( NULL != str_out );
+	ASSERT( NULL != buff_len );
+
+	*str_out = '\0';
+	out_len = 0;
 
 	for (j = 0; j < size / 8; j++)
 	{
@@ -281,10 +296,77 @@ void dump_mem( void *mem, int size )
 			}
 		}
 
-		sprintf( "0x%08p  %02x %02x %02x %02x %02x %02x %02x %02x  %s\n",
-			m, m[0], m[1], m[2], m[3], m[4], m[5], m[6], m[7], str);
+		ret = sprintf( dump_str, "%02x %02x %02x %02x %02x %02x %02x %02x  %s\n",
+			m[0], m[1], m[2], m[3], m[4], m[5], m[6], m[7], str );
+		if( 0 >= ret )
+		{
+			return -1;
+		}
 
+		out_len += ret;
+
+		if( out_len > *buff_len )
+		{
+			*buff_len = out_len;
+			return -1;
+		}
+
+		strcat( str_out, dump_str );
 		m+=8;
 	}
+
+	if( size % 8 )
+	{
+		memset( str, 0, sizeof( str ) );
+		for (i = 0; i < size % 8; i++) 
+		{
+			if (m[i] > ' ' && m[i] <= '~')
+			{
+				str[i] = m[i];
+			}
+			else
+			{
+				str[i] = '.';
+			}
+		}
+
+		*dump_str = '\0';
+		str_cur = dump_str;
+		m = ( byte* )mem + size - ( size % 8 );
+
+		for (i = 0; i < size % 8; i++) 
+		{
+			ret = sprintf( str_cur, "%02x ",
+				m[i] );
+			if( 0 >= ret )
+			{
+				return -1;
+			}
+
+			str_cur += ret;
+			out_len += ret;
+		}
+
+		if( out_len > *buff_len )
+		{
+			*buff_len = out_len;
+			return -1;
+		}
+
+		strcat( str_out, dump_str );
+
+		out_len += strlen( str ) + 2;
+		if( out_len > *buff_len )
+		{
+			*buff_len = out_len;
+			return -1;
+		}
+
+		strcat( str_out, " " );
+		strcat( str_out, str );
+	}
+
+	*buff_len = out_len;
+	return 0;
 }
 

@@ -4,32 +4,6 @@
 #include "lib_file_analyzer.h"
 #include "lib_struct_analyzer.h"
 
-int32 analyze_lib_section_str_table( lib_section_hdr *section1, dword data_len, file_analyzer *analyzer )
-{
-	//int ret;
-	//char *syms_str_table;
-	//dword syms_str_table_len;
-	//dword syms_str_offset;
-
-	//syms_str_table = ( byte* )( section1 + sizeof( *section1 ) );
-	//syms_str_table_len = atoi( section1->size ) - ( sizeof( dword ) * syms_num + sizeof( dword ) );
-
-	//syms_str_offset = 0;
-	//for(;; )
-	//{
-	//	syms_str_table;
-	//	syms_str_offset += strlen( syms_str_table ) + sizeof( char );
-	//	syms_str_table += strlen( syms_str_table ) + sizeof( char );
-
-	//	assert( syms_str_offset <= syms_str_table_len );
-	//	if( syms_str_offset == syms_str_table_len )
-	//	{
-	//		break;
-	//	}
-	//}
-	return 0;
-}
-
 int32 coff_optional32_hdr_analyze( const coff_opt_hdr28 *opt_hdr )
 {
 	coff_opt_hdr28 *opt_hdr28;
