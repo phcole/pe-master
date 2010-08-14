@@ -25,7 +25,7 @@
 
 #define WM_START_FILE_ANALYZE ( WM_USER + 0x101 )
 #define WM_MAIN_TREE_ITEM_SELED ( WM_USER + 0x102 )
-#define WM_DETAIL_TREE_ITEM_SELED ( WM_USER + 0x103 )
+#define WM_LIST_DETAIL_ITEM_SELED ( WM_USER + 0x103 )
 #define WM_MAIN_TREE_ITEM_RCLICK ( WM_USER + 0x104 )
 #define MENU_ITEM_ID_DUMP_OBJ	( 0x1001 )
 #define WM_DO_UI_WORK ( WM_USER + 0x105 )
@@ -35,7 +35,7 @@ typedef struct __analyze_context
 	char file_path[ MAX_PATH ];
 	HWND main_wnd;
 	HWND tree_main;
-	HWND tree_detail;
+	HWND list_detail;
 	file_analyzer analyzer;
 	HANDLE start_event;
 	HANDLE analyze_thread;
@@ -73,9 +73,9 @@ public:
 	afx_msg VOID OnBnClickedButtonSelFile();
 	afx_msg void OnBnClickedStopAnalyze();
 	afx_msg void OnTvnSelchangedTreeMain(NMHDR *pNMHDR, LRESULT *pResult);
-	afx_msg void OnTvnSelchangedTreeDetail(NMHDR *pNMHDR, LRESULT *pResult);
 	afx_msg void OnRClientTreeMain( NMHDR *pNMHDR, LRESULT *pResult );
 	afx_msg void OnMeasureItem(int nIDCtl, LPMEASUREITEMSTRUCT lpMeasureItemStruct);
 	afx_msg void OnInitMenuPopup(CMenu* pPopupMenu, UINT nIndex, BOOL bSysMenu);
 	afx_msg LRESULT OnDoUIWork( WPARAM wParam, LPARAM lParam );
+	afx_msg void OnLvnItemchangedListDetail(NMHDR *pNMHDR, LRESULT *pResult);
 };

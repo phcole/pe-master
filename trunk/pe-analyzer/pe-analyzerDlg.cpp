@@ -24,13 +24,16 @@
 #include "stdafx.h"
 #include "resource.h"
 #include "pe-analyzerDlg.h"
-#include ".\pe-analyzerdlg.h"
+#include "commctrl.h"
 
 #pragma comment( lib, "pe-master.lib" )
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif
+
+#define FLAG_SHOW_DATA 1
+#define FLAG_SHOW_STRING 0
 
 #define MAX_DESC_INFO_LEN 4096
 #define MAX_FILTER_LEN 1024
@@ -45,6 +48,12 @@ CHAR g_szFilter[ MAX_FILTER_LEN ] = { 0 };
 #define LIB_SECTION2_TITLE "SECTION2"
 #define LIB_LONGNAME_SECTION_TITLE "LONG NAME SECTION"
 #define LIB_OBJ_FILE_SECTION_TITLE "OBJ FILE SECTION "
+#define LIB_SECTION1_SYM_TABLE_TITLE "Symbol table"
+#define LIB_SECTION1_STR_TABLE_TITLE "String table"
+#define LIB_SECTION2_OBJ_OFFSETS_TITLE "Object section offsets"
+#define LIB_SECTION2_SYM_INDEXES_TITLE "Symbol indexes"
+#define LIB_SECTION2_STR_TABLE_TITLE "String table"
+#define LIB_SECTION_LONGNAME_STR_TABLE_TITLE "String table"
 
 #define COFF_FILE_TITLE "COFF FILE"
 
@@ -59,6 +68,25 @@ typedef struct __analyze_data
 	byte *data;
 	analyze_context *context;
 } analyze_data;
+
+//dword screen_dpi = USER_DEFAULT_SCREEN_DPI;
+//dword dpi_scale_factor_x = 1;
+//#include <math.h>
+//int compensate_xdpi ( int val )
+//{
+//	if (screen_dpi == USER_DEFAULT_SCREEN_DPI)
+//		return val;
+//	else
+//	{
+//		double tmp_val = (double) val * dpi_scale_factor_x;
+//
+//		if (tmp_val > 0)
+//			return (int) floor(tmp_val);
+//		else
+//			return (int) ceil(tmp_val);
+//	}
+//}
+
 
 // 用于应用程序“关于”菜单项的 CAboutDlg 对话框
 
@@ -116,11 +144,11 @@ BEGIN_MESSAGE_MAP(CpeanalyzerDlg, CDialog)
 	ON_BN_CLICKED(IDC_BUTTON_SEL_FILE, OnBnClickedButtonSelFile)
 	ON_BN_CLICKED(IDC_STOP_ANALYZE, OnBnClickedStopAnalyze)
 	ON_NOTIFY(TVN_SELCHANGED, IDC_TREE_MAIN, OnTvnSelchangedTreeMain)
-	ON_NOTIFY(TVN_SELCHANGED, IDC_TREE_DETAIL, OnTvnSelchangedTreeDetail)
 	ON_NOTIFY(NM_RCLICK, IDC_TREE_MAIN, OnRClientTreeMain )
 	ON_MESSAGE( WM_DO_UI_WORK, OnDoUIWork )
 	ON_WM_MEASUREITEM()
 	ON_WM_INITMENUPOPUP()
+	ON_NOTIFY(LVN_ITEMCHANGED, IDC_LIST_DETAIL, OnLvnItemchangedListDetail)
 END_MESSAGE_MAP()
 
 
@@ -150,20 +178,48 @@ dword create_context_menu( HWND parent )
     return seled_menu;
 }
 
-int32 init_wnd_feature( CpeanalyzerDlg *dlg )
+int32 init_wnd_feature( HWND hwnd )
 {
+	int32 ret;
+	int32 i;
 	HWND tree_main;
-	HWND tree_detail;
+	HWND list_detail;
+	char *columns_title[] = { "Address", "Raw data", "Description" };
+	LVCOLUMN lvc;
 
-	ASSERT( NULL != dlg );
+	ASSERT( NULL != hwnd );
 
-	tree_main = ( HWND )dlg->GetDlgItem( IDC_TREE_MAIN );
-	tree_detail = ( HWND )dlg->GetDlgItem( IDC_TREE_DETAIL );
+	tree_main = ( HWND )::GetDlgItem( hwnd, IDC_TREE_MAIN );
+	list_detail = ( HWND )::GetDlgItem( hwnd, IDC_LIST_DETAIL );
 	
 	::SendMessage( tree_main, TVM_SETBKCOLOR, 0, 0x00e1f0ff );
-	::SendMessage( tree_main, TVM_SETTEXTCOLOR, 0, 0x00ffffe0 );
-	::SendMessage( tree_main, TVM_SETLINECOLOR, 0, 0x00ffffe0 );
-	::SendMessage( tree_main, TVM_SETINSERTMARKCOLOR, 0, 0x00ffffe0 );
+	::SendMessage( tree_main, TVM_SETTEXTCOLOR, 0, 0x00000000 );
+	::SendMessage( tree_main, TVM_SETLINECOLOR, 0, 0x00eeeee0 );
+	::SendMessage( tree_main, TVM_SETINSERTMARKCOLOR, 0, 0x00eeeee0 );
+
+	for( ; ; )
+	{
+		ret = ListView_DeleteColumn( list_detail, 1 );
+		if( FALSE == ret )
+		{
+			break;
+		}
+	}
+
+	lvc.mask = LVCF_FMT | LVCF_WIDTH | LVCF_TEXT;
+	for ( i = 0; i < sizeof( columns_title ) / sizeof( columns_title[ 0 ] ); i++ ) 
+	{ 
+		lvc.pszText = columns_title[ i ];    
+		lvc.cx = 100;
+
+		if ( i < 2 )
+			lvc.fmt = LVCFMT_LEFT;
+		else
+			lvc.fmt = LVCFMT_RIGHT;                              
+
+		if (ListView_InsertColumn( list_detail, i, &lvc ) == -1) 
+			return FALSE; 
+	}
 
 	return 0;
 }
@@ -197,35 +253,203 @@ HTREEITEM insert_text_in_tree( HWND tree, HTREEITEM tree_item, const char *str_i
 	return sub_tree;
 }
 
-int32 add_lib_section_desc( lib_section_hdr *section1, HTREEITEM tree_item, analyze_context *context )
+int32 all_one_line_to_list( HWND list_detail, dword item_index, byte *data, byte *base_addr, dword data_len, char *descrition, dword flags )
 {
+	int32 ret;
 	char desc[ MAX_DESC_INFO_LEN ];
+	LV_ITEM lv_item;
+	dword out_str_len;
 
-	HWND tree_main;
-	HTREEITEM tree_ret;
+	memset( &lv_item, 0, sizeof( lv_item ) );
+	lv_item.mask = LVIF_TEXT;
 
-	tree_main = context->tree_detail;
+	sprintf( desc, "0x%0.8x", ( data - base_addr ) );
+	lv_item.pszText = desc;
+	lv_item.iItem = item_index;
+	lv_item.iSubItem = 0;
+	ListView_InsertItem( list_detail, &lv_item );
 
-	sprintf( desc, "0x%0.8x Section group id: %s", ( ( byte* )&section1->group_id[ 0 ] - context->analyzer.all_file_data ), section1->group_id );
-	tree_ret = insert_text_in_tree( tree_main, tree_item, desc, NULL );
+	out_str_len = MAX_DESC_INFO_LEN;
+	if( flags ==  FLAG_SHOW_DATA )
+	{
+		dump_mem( data, data_len, desc, &out_str_len );
+		lv_item.pszText = desc;
+	}
+	else if( flags == FLAG_SHOW_STRING )
+	{
+		lv_item.pszText = ( char* )data;
+	}
+	
+	lv_item.iItem = item_index;
+	lv_item.iSubItem = 1;
+	ListView_SetItem( list_detail, &lv_item );
 
-	sprintf( desc, "0x%0.8x Section user id: %s", ( ( byte* )&section1->user_id[ 0 ] - context->analyzer.all_file_data ), section1->user_id );
-	tree_ret = insert_text_in_tree( tree_main, tree_item, desc, NULL );
-
-	sprintf( desc, "0x%0.8x Section mode: %s", ( ( byte* )&section1->mode[ 0 ] - context->analyzer.all_file_data ), section1->mode );
-	tree_ret = insert_text_in_tree( tree_main, tree_item, desc, NULL );
-
-	sprintf( desc, "0x%0.8x Section name: %s", ( ( byte* )&section1->name[ 0 ] - context->analyzer.all_file_data ), section1->name );
-	tree_ret = insert_text_in_tree( tree_main, tree_item, desc, NULL );
-
-	sprintf( desc, "0x%0.8x Section size: %s", ( ( byte* )&section1->size[ 0 ] - context->analyzer.all_file_data ), section1->size );
-	tree_ret = insert_text_in_tree( tree_main, tree_item, desc, NULL );
-
-	sprintf( desc, "0x%0.8x Section time: %s", ( ( byte* )&section1->time[ 0 ] - context->analyzer.all_file_data ), section1->time );
-	tree_ret = insert_text_in_tree( tree_main, tree_item, desc, NULL );
+	lv_item.pszText = descrition;
+	lv_item.iItem = item_index;
+	lv_item.iSubItem = 2;
+	ListView_SetItem( list_detail, &lv_item );
 
 	return 0;
 }
+
+int32 add_lib_section_desc( struct_infos *info, file_analyzer *analyzer )
+{
+	int32 i;
+	int32 ret;
+	char desc[ MAX_DESC_INFO_LEN ];
+	byte *file_data;
+	analyze_context *context;
+	lib_section_hdr *section;
+	lib_section_hdr sect_copy;
+	HWND list_detail;
+	LV_ITEM lv_item;
+	dword out_str_len;
+	dword item_index;
+
+	file_data = analyzer->all_file_data;
+
+	context = ( analyze_context* )analyzer->context;
+	list_detail = context->list_detail;
+	section = ( lib_section_hdr* )info->struct_data;
+
+	sect_copy = *section;
+	clean_hdr_filled_bytes( &sect_copy );
+
+	ListView_DeleteAllItems( list_detail );
+
+	memset( &lv_item, 0, sizeof( lv_item ) );
+	lv_item.mask = LVIF_TEXT;
+
+	//char name[16];
+	//char time[12];
+	//char user_id[6];
+	//char group_id[6];
+	//char mode[8];
+	//char size[10];
+	//char end_of_header[2];
+
+	item_index = 0;
+	sprintf( desc, "Section name: %s", sect_copy.name  );
+	all_one_line_to_list( list_detail, item_index++, ( byte* )section->name, file_data, sizeof( section->name ), desc, FLAG_SHOW_DATA );
+
+	sprintf( desc, "Section time: %s", sect_copy.time  );
+	all_one_line_to_list( list_detail, item_index++, ( byte* )section->time, file_data, sizeof( section->time ), desc, FLAG_SHOW_DATA );
+
+	sprintf( desc, "Section user id: %s", sect_copy.user_id  );
+	all_one_line_to_list( list_detail, item_index++, ( byte* )section->user_id, file_data, sizeof( section->user_id ), desc, FLAG_SHOW_DATA );
+
+	sprintf( desc, "Section group id: %s", sect_copy.group_id  );
+	all_one_line_to_list( list_detail, item_index++, ( byte* )section->group_id, file_data, sizeof( section->group_id ), desc, FLAG_SHOW_DATA );
+
+	sprintf( desc, "Section mode: %s", sect_copy.mode  );
+	all_one_line_to_list( list_detail, item_index++, ( byte* )section->mode, file_data, sizeof( section->mode ), desc, FLAG_SHOW_DATA );
+
+	sprintf( desc, "Section size: %s", sect_copy.size  );
+	all_one_line_to_list( list_detail, item_index++, ( byte* )section->size, file_data, sizeof( section->size ), desc, FLAG_SHOW_DATA );
+
+	sprintf( desc, "Section end of header: %c%c", sect_copy.end_of_header[0], sect_copy.end_of_header[1] );
+	all_one_line_to_list( list_detail, item_index++, ( byte* )section->end_of_header, file_data, sizeof( section->end_of_header ), desc, FLAG_SHOW_DATA );
+
+	return 0;
+}
+
+int32 add_index_info( struct_infos *info, file_analyzer *analyzer, char *mask_str )
+{
+	int32 i;
+	int32 ret;
+	char desc[ MAX_DESC_INFO_LEN ];
+	byte *file_data;
+	analyze_context *context;
+	dword *sym_offset;
+	dword sym_off_num;
+	HWND list_detail;
+	LV_ITEM lv_item;
+	dword out_str_len;
+
+	file_data = analyzer->all_file_data;
+
+	context = ( analyze_context* )analyzer->context;
+	list_detail = context->list_detail;
+	sym_offset = ( dword* )info->struct_data;
+	sym_off_num = info->param1;
+
+	ListView_DeleteAllItems( list_detail );
+
+	memset( &lv_item, 0, sizeof( lv_item ) );
+	lv_item.mask = LVIF_TEXT;
+
+	for( i = 0; i < sym_off_num; i ++ )
+	{
+		sprintf( desc, mask_str, i + 1 );
+		all_one_line_to_list( list_detail, i, ( byte* )( sym_offset + i ), file_data, sizeof( *sym_offset ), desc, FLAG_SHOW_DATA );
+	}
+
+	return 0;
+}
+
+
+
+int32 add_str_table_info( struct_infos *info, file_analyzer *analyzer )
+{
+	int ret;
+	char *syms_str_table;
+	dword syms_str_table_len;
+	dword syms_str_offset;
+	char desc[ MAX_DESC_INFO_LEN ];
+	byte *file_data;
+	analyze_context *context;
+	HWND list_detail;
+	LV_ITEM lv_item;
+	dword item_index;
+	dword out_str_len;
+
+	file_data = analyzer->all_file_data;
+
+	context = ( analyze_context* )analyzer->context;
+	list_detail = context->list_detail;
+	syms_str_table = ( char* )info->struct_data;
+	syms_str_table_len = info->param1;
+
+	ListView_DeleteAllItems( list_detail );
+
+	memset( &lv_item, 0, sizeof( lv_item ) );
+	lv_item.mask = LVIF_TEXT;
+
+	item_index = 0;
+	syms_str_offset = 0;
+	for(;; )
+	{
+		sprintf( desc, "String %d at 0x%0.8x", item_index, syms_str_offset );
+		all_one_line_to_list( list_detail, item_index++, ( byte* )( syms_str_table ), file_data, strlen( syms_str_table ), desc, FLAG_SHOW_STRING );
+		;
+		syms_str_offset += strlen( syms_str_table ) + sizeof( char );
+		syms_str_table += strlen( syms_str_table ) + sizeof( char );
+
+		ASSERT( syms_str_offset <= syms_str_table_len );
+		if( syms_str_offset == syms_str_table_len )
+		{
+			break;
+		}
+	}
+
+	return 0;
+}
+
+int32 add_sym_table_info( struct_infos *info, file_analyzer *analyzer )
+{
+	return add_index_info( info, analyzer, "Symbol offset %d" );
+}
+
+int32 add_obj_offset_info( struct_infos *info, file_analyzer *analyzer )
+{
+	return add_index_info( info, analyzer, "Object section offset: %d" );
+}
+
+int32 add_sym_index_info( struct_infos *info, file_analyzer *analyzer )
+{
+	return add_index_info( info, analyzer, "Object symbol index: %d" );
+}
+
 
 HTREEITEM find_sub_tree_in_tree( HWND tree_main, HTREEITEM tree_item, dword struct_type, dword struct_index, dword flags )
 {
@@ -387,7 +611,7 @@ BOOL CpeanalyzerDlg::OnInitDialog()
 	SetIcon(m_hIcon, TRUE);			// 设置大图标
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
 
-	init_wnd_feature( this );
+	init_wnd_feature( m_hWnd );
 
 	g_pDlg = this;
 	// TODO: 在此添加额外的初始化代码
@@ -518,7 +742,7 @@ int32 analyze_pe_dos_header( PIMAGE_DOS_HEADER dos_hdr, analyze_context *context
 int32 analyze_pe_optional_hdr( PIMAGE_OPTIONAL_HEADER option_hdr, analyze_context *context )
 {
 	//HWND tree_main;
-	//HWND tree_detail;
+	//HWND list_detail;
 	//HWND sub_tree;
 	//HWND ret;
 
@@ -526,10 +750,10 @@ int32 analyze_pe_optional_hdr( PIMAGE_OPTIONAL_HEADER option_hdr, analyze_contex
 	//ASSERT( NULL != option_hdr );
 	//ASSERT( NULL != context );
 	//ASSERT( NULL != context->tree_main );
-	//ASSERT( NULL != context->tree_detail );
+	//ASSERT( NULL != context->list_detail );
 	//
 	//tree_main = context->tree_main;
-	//tree_detail = context->tree_detail;
+	//list_detail = context->list_detail;
 
 	//option_hdr->AddressOfEntryPoint;
 
@@ -651,40 +875,78 @@ int32 analyze_coff_file_hdr( coff_file_hdr *file_hdr, analyze_context *costext )
 	return 0;
 }
 
-
-int32 analyze_lib_section2( lib_section_hdr *section2, struct_infos *info, analyze_context *context )
-{ 
-	char desc[ MAX_DESC_INFO_LEN ];
-
-	int32 ret;
+int32 insert_text_in_main_tree( char *text, analyze_context *context, dword id )
+{
 	HWND tree_main;
-	HTREEITEM tree_target;
-	HTREEITEM tree_ret;
 	HTREEITEM tree_self;
+
+	ASSERT( NULL != context );
 
 	tree_main = context->tree_main;
 
-	tree_target = find_sub_tree_in_tree( tree_main, TVI_ROOT, STRUCT_TYPE_LIB_FILE, 0, NULL );
-	if( NULL == tree_target )
-	{
-		return -1;
-	}
-	
-	tree_self = insert_text_in_tree( tree_main, tree_target, LIB_SECTION2_TITLE, ( byte* )info );
+	tree_self = insert_text_in_tree( tree_main, TVI_ROOT, text, ( byte* )id );
 	if( NULL == tree_self )
-	{
-		return -1;
-	}
-
-	ret = add_lib_section_desc( section2, tree_self, context );
-	tree_ret = insert_text_in_tree( tree_main, tree_self, "Lib section string table", ( byte* )info );
-	if( NULL == tree_ret )
 	{
 		return -1;
 	}
 
 	return 0;
 }
+
+int32 insert_item_in_seted_item( dword struct_type, dword index, char* text, struct_infos *info, analyze_context *context )
+{ 
+	int32 ret;
+	HWND tree_main;
+	struct_infos *find_info;
+	HTREEITEM tree_target;
+	HTREEITEM tree_self;
+	HTREEITEM tree_ret;
+
+	ASSERT( NULL != info );
+	ASSERT( NULL != context );
+
+	tree_main = context->tree_main;
+	info->param2 = NULL;
+
+	if( STRUCT_TYPE_PE_FILE == struct_type || 
+		STRUCT_TYPE_LIB_FILE == struct_type || 
+		STRUCT_TYPE_COFF_FILE == struct_type )
+	{
+		tree_target = find_sub_tree_in_tree( tree_main, TVI_ROOT, struct_type, index, 0 );
+		if( NULL == tree_target )
+		{
+			return -1;
+		}
+	}
+	else
+	{
+		find_info = find_struct_info_by_id( struct_type, index );
+		if( NULL == find_info )
+		{
+			return -1;
+		}
+
+		if( NULL == find_info->param2 )
+		{
+			ASSERT( FALSE );
+			return -1;
+		}
+
+		tree_target = ( HTREEITEM )find_info->param2;
+	}
+
+	
+
+	tree_self = insert_text_in_tree( tree_main, tree_target, text, ( byte* )info );
+	if( NULL == tree_self )
+	{
+		return -1;
+	}
+
+	info->param2 = ( dword )tree_self;
+	return 0;
+}
+
 
 int32 analyze_lib_section_longname( lib_section_hdr *section, struct_infos *info, analyze_context *costext )
 {
@@ -802,16 +1064,39 @@ int32 analzye_all_struct( struct_infos *struct_info, void *context )
 		//ret = analyze_pe_optional_hdr( ( PIMAGE_OPTIONAL_HEADER )__struct_info->struct_data, __context );
 		break;
 	case STRUCT_TYPE_LIB_SECTION1:
-		ret = analyze_lib_section1( ( lib_section_hdr* )__struct_info->struct_data, __struct_info, __context );
+		ret = insert_text_in_main_tree( LIB_FILE_TITLE, __context, STRUCT_TYPE_LIB_FILE );
+		if( 0 > ret )
+		{
+			goto __error;
+		}
+		ret = insert_item_in_seted_item( STRUCT_TYPE_LIB_FILE, 0, LIB_SECTION1_TITLE, __struct_info, __context );
 		break;
 	case STRUCT_TYPE_LIB_SECTION2:
-		ret = analyze_lib_section2( ( lib_section_hdr* )__struct_info->struct_data, __struct_info,  __context );
+		ret = insert_item_in_seted_item( STRUCT_TYPE_LIB_FILE, 0, LIB_SECTION2_TITLE, __struct_info, __context );
 		break;
 	case STRUCT_TYPE_LIB_SECTION_LONGNAME:
-		ret = analyze_lib_section_longname( ( lib_section_hdr* )__struct_info->struct_data, __struct_info, __context );
+		ret = insert_item_in_seted_item( STRUCT_TYPE_LIB_FILE, 0, LIB_LONGNAME_SECTION_TITLE, __struct_info, __context );
 		break;
 	case STRUCT_TYPE_LIB_SECTION_OBJ_FILE:
-		ret = analyze_lib_section_obj_file( ( lib_section_hdr* )__struct_info->struct_data, __struct_info, __context );
+		ret = insert_item_in_seted_item( STRUCT_TYPE_LIB_FILE, 0, LIB_OBJ_FILE_SECTION_TITLE, __struct_info, __context );
+		break;
+	case STRUCT_TYPE_SYM_TABLE:
+		ret = insert_item_in_seted_item( STRUCT_TYPE_LIB_SECTION1, 0, LIB_SECTION1_SYM_TABLE_TITLE, __struct_info, __context );
+		break;
+	case STRUCT_TYPE_SECTION1_STR_TABLE:
+		ret = insert_item_in_seted_item( STRUCT_TYPE_LIB_SECTION1, 0, LIB_SECTION1_STR_TABLE_TITLE, __struct_info, __context );
+		break;
+	case STRUCT_TYPE_OBJ_OFFSETS:
+		ret = insert_item_in_seted_item( STRUCT_TYPE_LIB_SECTION2, 0, LIB_SECTION2_OBJ_OFFSETS_TITLE, __struct_info, __context );
+		break;
+	case STRUCT_TYPE_SYM_INDEXES:
+		ret = insert_item_in_seted_item( STRUCT_TYPE_LIB_SECTION2, 0, LIB_SECTION2_SYM_INDEXES_TITLE, __struct_info, __context );
+		break;
+	case STRUCT_TYPE_SECTION2_STR_TABLE:
+		ret = insert_item_in_seted_item( STRUCT_TYPE_LIB_SECTION2, 0, LIB_SECTION2_STR_TABLE_TITLE, __struct_info, __context );
+		break;
+	case STRUCT_TYPE_LONGNAME_SECTION_STR_TABLE:
+		ret = insert_item_in_seted_item( STRUCT_TYPE_LIB_SECTION_LONGNAME, 0, LIB_SECTION_LONGNAME_STR_TABLE_TITLE, __struct_info, __context );
 		break;
 	case STRUCT_TYPE_COFF_FILE_HEADER:
 		//ret = analyze_coff_file_hdr( ( coff_file_hdr* )__struct_info->struct_data, __struct_info, __context );
@@ -825,6 +1110,7 @@ int32 analzye_all_struct( struct_infos *struct_info, void *context )
 		break;
 	}
 
+__error:
 	return ret;
 }
 
@@ -961,22 +1247,6 @@ int32 on_detail_tree_item_seled( HTREEITEM item_seled, file_analyzer *analyzer )
 		return -1;
 	}
 
-	if( NULL != strstr( str_geted, LIB_SECTION1_TITLE ) )
-	{
-
-	}
-	else if( NULL != strstr( str_geted, LIB_SECTION2_TITLE ) )
-	{
-
-	}
-	else if( NULL != strstr( str_geted, LIB_LONGNAME_SECTION_TITLE ) )
-	{
-
-	}
-	else if( NULL != strstr( str_geted, LIB_OBJ_FILE_SECTION_TITLE ) )
-	{
-
-	}
 	return 0;
 }
 
@@ -1021,7 +1291,28 @@ int32 on_main_tree_item_seled( HTREEITEM item_seled, file_analyzer *analyzer )
 		switch( info->struct_id )
 		{
 		case STRUCT_TYPE_LIB_SECTION1:
-			ret = add_lib_section_desc( ( lib_section_hdr* )info->struct_data, TVI_ROOT, context );
+			ret = add_lib_section_desc( info, analyzer );
+			break;
+		case STRUCT_TYPE_LIB_SECTION2:
+			ret = add_lib_section_desc( info, analyzer );
+			break;
+		case STRUCT_TYPE_SYM_TABLE:
+			ret = add_sym_table_info( info, analyzer );
+			break;
+		case STRUCT_TYPE_SECTION1_STR_TABLE:
+			ret = add_str_table_info( info, analyzer );
+			break;
+		case STRUCT_TYPE_OBJ_OFFSETS:
+			ret = add_obj_offset_info( info, analyzer );
+			break;
+		case STRUCT_TYPE_SYM_INDEXES:
+			ret = add_sym_index_info( info, analyzer );
+			break;
+		case STRUCT_TYPE_SECTION2_STR_TABLE:
+			ret = add_str_table_info( info, analyzer );
+			break;
+		case STRUCT_TYPE_LONGNAME_SECTION_STR_TABLE:
+			ret = add_str_table_info( info, analyzer );
 			break;
 		default:
 			break;
@@ -1070,7 +1361,7 @@ dword CALLBACK thread_analyze_file( LPVOID param )
 		case WM_MAIN_TREE_ITEM_SELED:
 			on_main_tree_item_seled( ( HTREEITEM )msg.lParam, &context->analyzer );
 			break;
-		case WM_DETAIL_TREE_ITEM_SELED:
+		case WM_LIST_DETAIL_ITEM_SELED:
 			on_detail_tree_item_seled( ( HTREEITEM )msg.lParam, &context->analyzer );
 			break;
 		case WM_MAIN_TREE_ITEM_RCLICK:
@@ -1124,16 +1415,16 @@ void CpeanalyzerDlg::OnBnClickedOk()
 	int32 ret;
 	dword wait_ret;
 	HWND tree_main;
-	HWND tree_detail;
+	HWND list_detail;
 	HWND edit_file_path;
 
 	tree_main = ( HWND )::GetDlgItem( m_hWnd, IDC_TREE_MAIN );
-	tree_detail = ( HWND )::GetDlgItem( m_hWnd, IDC_TREE_DETAIL );
+	list_detail = ( HWND )::GetDlgItem( m_hWnd, IDC_LIST_DETAIL );
 	edit_file_path = ( HWND )::GetDlgItem( m_hWnd, IDC_EDIT_FILE_PATH );
 
 	analyzing_context.main_wnd = m_hWnd;
 	analyzing_context.tree_main = tree_main;
-	analyzing_context.tree_detail = tree_detail;
+	analyzing_context.list_detail = list_detail;
 	::GetWindowText( edit_file_path, analyzing_context.file_path, sizeof( analyzing_context.file_path ) );
 	if( '\0' == analyzing_context.file_path[ 0 ] )
 	{
@@ -1228,20 +1519,6 @@ void CpeanalyzerDlg::OnTvnSelchangedTreeMain(NMHDR *pNMHDR, LRESULT *pResult)
 	*pResult = 0;
 }
 
-void CpeanalyzerDlg::OnTvnSelchangedTreeDetail(NMHDR *pNMHDR, LRESULT *pResult)
-{
-	int32 ret;
-	LPNMTREEVIEW pNMTreeView = reinterpret_cast<LPNMTREEVIEW>(pNMHDR);
-	// TODO: 在此添加控件通知处理程序代码
-
-	ret = PostThreadMessage( analyzing_context.thread_id, WM_DETAIL_TREE_ITEM_SELED, ( WPARAM )&pNMTreeView->itemOld, ( LPARAM )&pNMTreeView->itemNew );
-	if( FALSE == ret )
-	{
-		exit_work_thread( &analyzing_context );
-	}
-	*pResult = 0;
-}
-
 LRESULT CpeanalyzerDlg::OnDoUIWork( WPARAM wParam, LPARAM lParam )
 {
 	return create_context_menu( m_hWnd );
@@ -1286,4 +1563,11 @@ void CpeanalyzerDlg::OnInitMenuPopup(CMenu* pPopupMenu, UINT nIndex, BOOL bSysMe
 	CDialog::OnInitMenuPopup(pPopupMenu, nIndex, bSysMenu);
 
 	// TODO: 在此处添加消息处理程序代码
+}
+
+void CpeanalyzerDlg::OnLvnItemchangedListDetail(NMHDR *pNMHDR, LRESULT *pResult)
+{
+	LPNMLISTVIEW pNMLV = reinterpret_cast<LPNMLISTVIEW>(pNMHDR);
+	// TODO: 在此添加控件通知处理程序代码
+	*pResult = 0;
 }

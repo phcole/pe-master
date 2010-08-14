@@ -29,6 +29,12 @@
 #define STRUCT_TYPE_LIB_SECTION2 0x00020002
 #define STRUCT_TYPE_LIB_SECTION_LONGNAME 0x00020003
 #define STRUCT_TYPE_LIB_SECTION_OBJ_FILE 0x00020004
+#define STRUCT_TYPE_SYM_TABLE 0x00020005
+#define STRUCT_TYPE_SECTION1_STR_TABLE 0x00020006
+#define STRUCT_TYPE_OBJ_OFFSETS 0x00020007
+#define STRUCT_TYPE_SYM_INDEXES 0x00020008
+#define STRUCT_TYPE_SECTION2_STR_TABLE 0x0002000c
+#define STRUCT_TYPE_LONGNAME_SECTION_STR_TABLE 0x0002000d
 
 typedef struct __lib_section_hdr
 {
@@ -60,10 +66,11 @@ typedef struct __section2_data{
 extern "C" {
 #endif
 
-int find_section_2( byte *data );
-int callback check_lib_file_type( byte *data, dword data_len );
-int read_obj_section( lib_section_hdr* sect, byte *data );
-int analyze_lib_file_struct( byte *data, dword data_len, file_analyzer *analyzer );
+	void clean_hdr_filled_bytes( lib_section_hdr *hdr );
+	int find_section_2( byte *data );
+	int callback check_lib_file_type( byte *data, dword data_len );
+	int read_obj_section( lib_section_hdr* sect, byte *data );
+	int analyze_lib_file_struct( byte *data, dword data_len, file_analyzer *analyzer );
 
 #ifdef __cplusplus
 }
