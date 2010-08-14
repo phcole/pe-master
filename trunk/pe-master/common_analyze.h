@@ -52,6 +52,7 @@ typedef struct __struct_infos
 	dword struct_context;
 	dword param1;
 	dword param2;
+	dword param3;
 } struct_infos;
 
 typedef struct __error_infos
@@ -92,6 +93,7 @@ typedef struct __file_analyzer
 	void *context;
 	byte *all_file_data;
 	dword file_data_len;
+	dword file_type;
 } file_analyzer;
 
 #ifdef __cplusplus

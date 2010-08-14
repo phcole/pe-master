@@ -420,11 +420,11 @@ int analyze_lib_file_struct( byte *data, dword data_len, file_analyzer *analyzer
 				goto __error;
 			}
 
-			info->struct_data = ( byte* )long_name_sect + sizeof( lib_section_hdr ) + sizeof( dword ); ;
+			info->struct_data = ( byte* )long_name_sect + sizeof( lib_section_hdr ); ;
 			info->struct_id = STRUCT_TYPE_LONGNAME_SECTION_STR_TABLE;
 			info->struct_index = 0;
 			info->struct_context = analyzer;
-			info->param1 = *( dword* )( ( byte* )long_name_sect + sizeof( lib_section_hdr ) );
+			info->param1 = atoi( long_name_sect->size );
 			//littelendian2bigendian( &info->param1, sizeof( info->param1 ) );
 
 			analyzer->struct_analyze( info, analyzer->context );
@@ -489,7 +489,7 @@ int analyze_lib_file_struct( byte *data, dword data_len, file_analyzer *analyzer
 			analyzer->obj_file_analyze( &info, analyzer->context );
 		}
 
-		//analyze_lib_file_struct( ( byte* )obj_file_sect + sizeof( lib_section_hdr ), atoi( obj_file_sect->size ), analyzer );
+		analyze_coff_file_struct( ( byte* )obj_file_sect + sizeof( lib_section_hdr ), atoi( obj_file_sect->size ), i, analyzer );
 
 		offset += sizeof( lib_section_hdr );
 		offset += atoi( obj_file_sect->size );

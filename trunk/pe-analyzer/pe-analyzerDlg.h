@@ -78,4 +78,5 @@ public:
 	afx_msg void OnInitMenuPopup(CMenu* pPopupMenu, UINT nIndex, BOOL bSysMenu);
 	afx_msg LRESULT OnDoUIWork( WPARAM wParam, LPARAM lParam );
 	afx_msg void OnLvnItemchangedListDetail(NMHDR *pNMHDR, LRESULT *pResult);
+	afx_msg void OnDropFiles( HDROP hDropInfo );
 };

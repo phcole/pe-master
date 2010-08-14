@@ -59,8 +59,10 @@ void *find_record_info( void *info, list_ele_compare compare_func )
 
 int32 end_analyzing()
 {
+	int32 ret;
 	ASSERT( NULL != g_all_struct_info );
-	return destroy_list( g_all_struct_info, free_element_on_destroy );
+	ret = destroy_list( g_all_struct_info, free_element_on_destroy );
+	g_all_struct_info = NULL;
 }
 
 int32 open_file_dlg( HWND owner, char *seled_file_name, dword buff_len, dword flags )
@@ -259,10 +261,14 @@ __return:
 	return ret;
 }
 
-int release_file_data( byte *data )
+int release_file_data( byte **data )
 {
 	end_analyzing();
-	free( data );
+	ASSERT( NULL != data );
+	ASSERT( NULL != *data );
+	
+	free( *data );
+	*data = NULL;
 }
 
 int32 dump_mem( void *mem, int size, char*str_out, dword *buff_len )
