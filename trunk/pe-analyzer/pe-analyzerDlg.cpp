@@ -333,9 +333,460 @@ int32 all_one_line_to_list( HWND list_detail, dword item_index, byte *data, byte
 	return 0;
 }
 
-int32 add_lib_section_desc( struct_infos *info, file_analyzer *analyzer )
+int32 add_pe_dos_header( struct_infos *info, file_analyzer *analyzer )
+{
+	int32 ret;
+	char desc[ MAX_DESC_INFO_LEN ];
+	byte *file_data;
+	analyze_context *context;
+	PIMAGE_DOS_HEADER dos_hdr;
+	HWND list_detail;
+	LV_ITEM lv_item;
+	dword out_str_len;
+	dword item_index;
+
+	file_data = analyzer->all_file_data;
+
+	context = ( analyze_context* )analyzer->context;
+	list_detail = context->list_detail;
+	dos_hdr = ( PIMAGE_DOS_HEADER )info->struct_data;
+
+	ListView_DeleteAllItems( list_detail );
+
+	//typedef struct _IMAGE_DOS_HEADER {      // DOS .EXE header
+ //   WORD   e_magic;                     // Magic number
+ //   WORD   e_cblp;                      // Bytes on last page of file
+ //   WORD   e_cp;                        // Pages in file
+ //   WORD   e_crlc;                      // Relocations
+ //   WORD   e_cparhdr;                   // Size of header in paragraphs
+ //   WORD   e_minalloc;                  // Minimum extra paragraphs needed
+ //   WORD   e_maxalloc;                  // Maximum extra paragraphs needed
+ //   WORD   e_ss;                        // Initial (relative) SS value
+ //   WORD   e_sp;                        // Initial SP value
+ //   WORD   e_csum;                      // Checksum
+ //   WORD   e_ip;                        // Initial IP value
+ //   WORD   e_cs;                        // Initial (relative) CS value
+ //   WORD   e_lfarlc;                    // File address of relocation table
+ //   WORD   e_ovno;                      // Overlay number
+ //   WORD   e_res[4];                    // Reserved words
+ //   WORD   e_oemid;                     // OEM identifier (for e_oeminfo)
+ //   WORD   e_oeminfo;                   // OEM information; e_oemid specific
+ //   WORD   e_res2[10];                  // Reserved words
+ //   LONG   e_lfanew;                    // File address of new exe header
+ // } IMAGE_DOS_HEADER, *PIMAGE_DOS_HEADER;
+
+	item_index = 0;
+	sprintf( desc, "Magic number: 0x%0.4x", dos_hdr->e_magic );
+	all_one_line_to_list( list_detail, item_index++, ( byte* )&dos_hdr->e_magic, file_data, sizeof( dos_hdr->e_magic ), desc, FLAG_SHOW_DATA );
+
+	sprintf( desc, "Bytes on last page of file: 0x%0.4x", dos_hdr->e_cblp  );
+	all_one_line_to_list( list_detail, item_index++, ( byte* )&dos_hdr->e_cblp, file_data, sizeof( dos_hdr->e_cblp ), desc, FLAG_SHOW_DATA );
+
+	sprintf( desc, "Pages in file: 0x%0.4x", dos_hdr->e_cp  );
+	all_one_line_to_list( list_detail, item_index++, ( byte* )&dos_hdr->e_cp, file_data, sizeof( dos_hdr->e_cp ), desc, FLAG_SHOW_DATA );
+
+	sprintf( desc, "Relocations: 0x%0.4x", dos_hdr->e_crlc  );
+	all_one_line_to_list( list_detail, item_index++, ( byte* )&dos_hdr->e_crlc, file_data, sizeof( dos_hdr->e_crlc ), desc, FLAG_SHOW_DATA );
+
+	sprintf( desc, "Size of header in paragraphs: 0x%0.4x", dos_hdr->e_cparhdr  );
+	all_one_line_to_list( list_detail, item_index++, ( byte* )&dos_hdr->e_cparhdr, file_data, sizeof( dos_hdr->e_cparhdr ), desc, FLAG_SHOW_DATA );
+
+	sprintf( desc, "Minimum extra paragraphs needed: 0x%0.4x", dos_hdr->e_minalloc  );
+	all_one_line_to_list( list_detail, item_index++, ( byte* )&dos_hdr->e_minalloc, file_data, sizeof( dos_hdr->e_minalloc ), desc, FLAG_SHOW_DATA );
+
+	sprintf( desc, "Maximum extra paragraphs needed: 0x%0.4x", dos_hdr->e_maxalloc );
+	all_one_line_to_list( list_detail, item_index++, ( byte* )&dos_hdr->e_maxalloc, file_data, sizeof( dos_hdr->e_maxalloc ), desc, FLAG_SHOW_DATA );
+
+	sprintf( desc, "Initial (relative) SS value: 0x%0.4x", dos_hdr->e_ss  );
+	all_one_line_to_list( list_detail, item_index++, ( byte* )&dos_hdr->e_ss, file_data, sizeof( dos_hdr->e_ss ), desc, FLAG_SHOW_DATA );
+
+	sprintf( desc, "Initial SP value: 0x%0.4x", dos_hdr->e_sp  );
+	all_one_line_to_list( list_detail, item_index++, ( byte* )&dos_hdr->e_sp, file_data, sizeof( dos_hdr->e_sp ), desc, FLAG_SHOW_DATA );
+
+	sprintf( desc, "Checksum: 0x%0.4x", dos_hdr->e_csum  );
+	all_one_line_to_list( list_detail, item_index++, ( byte* )&dos_hdr->e_csum, file_data, sizeof( dos_hdr->e_csum ), desc, FLAG_SHOW_DATA );
+
+	sprintf( desc, "Initial IP value: 0x%0.4x", dos_hdr->e_ip  );
+	all_one_line_to_list( list_detail, item_index++, ( byte* )&dos_hdr->e_ip, file_data, sizeof( dos_hdr->e_ip ), desc, FLAG_SHOW_DATA );
+
+	sprintf( desc, "Initial (relative) CS value: 0x%0.4x", dos_hdr->e_cs  );
+	all_one_line_to_list( list_detail, item_index++, ( byte* )&dos_hdr->e_cs, file_data, sizeof( dos_hdr->e_cs ), desc, FLAG_SHOW_DATA );
+
+	sprintf( desc, "File address of relocation table: 0x%0.4x", dos_hdr->e_lfarlc );
+	all_one_line_to_list( list_detail, item_index++, ( byte* )&dos_hdr->e_lfarlc, file_data, sizeof( dos_hdr->e_lfarlc ), desc, FLAG_SHOW_DATA );
+
+	sprintf( desc, "Overlay number: %d", dos_hdr->e_ovno  );
+	all_one_line_to_list( list_detail, item_index++, ( byte* )&dos_hdr->e_ovno, file_data, sizeof( dos_hdr->e_ovno ), desc, FLAG_SHOW_DATA );
+
+	sprintf( desc, "Reserved words: 0x%0.4x 0x%0.4x 0x%0.4x 0x%0.4x", 
+		dos_hdr->e_res[ 0 ], 
+		dos_hdr->e_res[ 1 ], 
+		dos_hdr->e_res[ 2 ], 
+		dos_hdr->e_res[ 3 ]  );
+	all_one_line_to_list( list_detail, item_index++, ( byte* )dos_hdr->e_res, file_data, sizeof( dos_hdr->e_res ), desc, FLAG_SHOW_DATA );
+
+	sprintf( desc, "OEM id: 0x%0.4x", dos_hdr->e_oemid  );
+	all_one_line_to_list( list_detail, item_index++, ( byte* )&dos_hdr->e_oemid, file_data, sizeof( dos_hdr->e_oemid ), desc, FLAG_SHOW_DATA );
+
+	sprintf( desc, "OEM info: 0x%0.4x", dos_hdr->e_oeminfo  );
+	all_one_line_to_list( list_detail, item_index++, ( byte* )&dos_hdr->e_oeminfo, file_data, sizeof( dos_hdr->e_oeminfo ), desc, FLAG_SHOW_DATA );
+
+	sprintf( desc, "Reserved words: 0x%0.4x 0x%0.4x 0x%0.4x 0x%0.4x 0x%0.4x 0x%0.4x 0x%0.4x 0x%0.4x 0x%0.4x 0x%0.4x ", 
+		dos_hdr->e_res2[ 0 ], 
+		dos_hdr->e_res2[ 1 ],
+		dos_hdr->e_res2[ 2 ],
+		dos_hdr->e_res2[ 3 ],
+		dos_hdr->e_res2[ 4 ], 
+		dos_hdr->e_res2[ 5 ], 
+		dos_hdr->e_res2[ 6 ],
+		dos_hdr->e_res2[ 7 ],
+		dos_hdr->e_res2[ 8 ],
+		dos_hdr->e_res2[ 9 ] );
+	all_one_line_to_list( list_detail, item_index++, ( byte* )dos_hdr->e_res2, file_data, sizeof( dos_hdr->e_res2 ), desc, FLAG_SHOW_DATA );
+
+	sprintf( desc, "NT header offset: 0x%0.8x", dos_hdr->e_lfanew );
+	all_one_line_to_list( list_detail, item_index++, ( byte* )&dos_hdr->e_lfanew, file_data, sizeof( dos_hdr->e_lfanew ), desc, FLAG_SHOW_DATA );
+	return 0;
+}
+
+int32 add_pe_dos_stub( struct_infos *info, file_analyzer *analyzer )
+{
+	int32 ret;
+	char desc[ MAX_DESC_INFO_LEN ];
+	byte *file_data;
+	analyze_context *context;
+	PIMAGE_DOS_HEADER dos_hdr;
+	HWND list_detail;
+	LV_ITEM lv_item;
+	dword out_str_len;
+	dword item_index;
+
+	file_data = analyzer->all_file_data;
+
+	context = ( analyze_context* )analyzer->context;
+	list_detail = context->list_detail;
+	dos_hdr = ( PIMAGE_DOS_HEADER )info->struct_data;
+
+	ListView_DeleteAllItems( list_detail );
+
+	//typedef struct _IMAGE_DOS_HEADER {      // DOS .EXE header
+ //   WORD   e_magic;                     // Magic number
+ //   WORD   e_cblp;                      // Bytes on last page of file
+ //   WORD   e_cp;                        // Pages in file
+ //   WORD   e_crlc;                      // Relocations
+ //   WORD   e_cparhdr;                   // Size of header in paragraphs
+ //   WORD   e_minalloc;                  // Minimum extra paragraphs needed
+ //   WORD   e_maxalloc;                  // Maximum extra paragraphs needed
+ //   WORD   e_ss;                        // Initial (relative) SS value
+ //   WORD   e_sp;                        // Initial SP value
+ //   WORD   e_csum;                      // Checksum
+ //   WORD   e_ip;                        // Initial IP value
+ //   WORD   e_cs;                        // Initial (relative) CS value
+ //   WORD   e_lfarlc;                    // File address of relocation table
+ //   WORD   e_ovno;                      // Overlay number
+ //   WORD   e_res[4];                    // Reserved words
+ //   WORD   e_oemid;                     // OEM identifier (for e_oeminfo)
+ //   WORD   e_oeminfo;                   // OEM information; e_oemid specific
+ //   WORD   e_res2[10];                  // Reserved words
+ //   LONG   e_lfanew;                    // File address of new exe header
+ // } IMAGE_DOS_HEADER, *PIMAGE_DOS_HEADER;
+
+	item_index = 0;
+	sprintf( desc, "Magic number: 0x%0.4x", dos_hdr->e_magic );
+	all_one_line_to_list( list_detail, item_index++, ( byte* )&dos_hdr->e_magic, file_data, sizeof( dos_hdr->e_magic ), desc, FLAG_SHOW_DATA );
+
+	sprintf( desc, "Bytes on last page of file: 0x%0.4x", dos_hdr->e_cblp  );
+	all_one_line_to_list( list_detail, item_index++, ( byte* )&dos_hdr->e_cblp, file_data, sizeof( dos_hdr->e_cblp ), desc, FLAG_SHOW_DATA );
+
+	sprintf( desc, "Pages in file: 0x%0.4x", dos_hdr->e_cp  );
+	all_one_line_to_list( list_detail, item_index++, ( byte* )&dos_hdr->e_cp, file_data, sizeof( dos_hdr->e_cp ), desc, FLAG_SHOW_DATA );
+
+	sprintf( desc, "Relocations: 0x%0.4x", dos_hdr->e_crlc  );
+	all_one_line_to_list( list_detail, item_index++, ( byte* )&dos_hdr->e_crlc, file_data, sizeof( dos_hdr->e_crlc ), desc, FLAG_SHOW_DATA );
+
+	sprintf( desc, "Size of header in paragraphs: 0x%0.4x", dos_hdr->e_cparhdr  );
+	all_one_line_to_list( list_detail, item_index++, ( byte* )&dos_hdr->e_cparhdr, file_data, sizeof( dos_hdr->e_cparhdr ), desc, FLAG_SHOW_DATA );
+
+	sprintf( desc, "Minimum extra paragraphs needed: 0x%0.4x", dos_hdr->e_minalloc  );
+	all_one_line_to_list( list_detail, item_index++, ( byte* )&dos_hdr->e_minalloc, file_data, sizeof( dos_hdr->e_minalloc ), desc, FLAG_SHOW_DATA );
+
+	sprintf( desc, "Maximum extra paragraphs needed: 0x%0.4x", dos_hdr->e_maxalloc );
+	all_one_line_to_list( list_detail, item_index++, ( byte* )&dos_hdr->e_maxalloc, file_data, sizeof( dos_hdr->e_maxalloc ), desc, FLAG_SHOW_DATA );
+
+	sprintf( desc, "Initial (relative) SS value: 0x%0.4x", dos_hdr->e_ss  );
+	all_one_line_to_list( list_detail, item_index++, ( byte* )&dos_hdr->e_ss, file_data, sizeof( dos_hdr->e_ss ), desc, FLAG_SHOW_DATA );
+
+	sprintf( desc, "Initial SP value: 0x%0.4x", dos_hdr->e_sp  );
+	all_one_line_to_list( list_detail, item_index++, ( byte* )&dos_hdr->e_sp, file_data, sizeof( dos_hdr->e_sp ), desc, FLAG_SHOW_DATA );
+
+	sprintf( desc, "Checksum: 0x%0.4x", dos_hdr->e_csum  );
+	all_one_line_to_list( list_detail, item_index++, ( byte* )&dos_hdr->e_csum, file_data, sizeof( dos_hdr->e_csum ), desc, FLAG_SHOW_DATA );
+
+	sprintf( desc, "Initial IP value: 0x%0.4x", dos_hdr->e_ip  );
+	all_one_line_to_list( list_detail, item_index++, ( byte* )&dos_hdr->e_ip, file_data, sizeof( dos_hdr->e_ip ), desc, FLAG_SHOW_DATA );
+
+	sprintf( desc, "Initial (relative) CS value: 0x%0.4x", dos_hdr->e_cs  );
+	all_one_line_to_list( list_detail, item_index++, ( byte* )&dos_hdr->e_cs, file_data, sizeof( dos_hdr->e_cs ), desc, FLAG_SHOW_DATA );
+
+	sprintf( desc, "File address of relocation table: 0x%0.4x", dos_hdr->e_lfarlc );
+	all_one_line_to_list( list_detail, item_index++, ( byte* )&dos_hdr->e_lfarlc, file_data, sizeof( dos_hdr->e_lfarlc ), desc, FLAG_SHOW_DATA );
+
+	sprintf( desc, "Overlay number: %d", dos_hdr->e_ovno  );
+	all_one_line_to_list( list_detail, item_index++, ( byte* )&dos_hdr->e_ovno, file_data, sizeof( dos_hdr->e_ovno ), desc, FLAG_SHOW_DATA );
+
+	sprintf( desc, "Reserved words: 0x%0.4x 0x%0.4x 0x%0.4x 0x%0.4x", 
+		dos_hdr->e_res[ 0 ], 
+		dos_hdr->e_res[ 1 ], 
+		dos_hdr->e_res[ 2 ], 
+		dos_hdr->e_res[ 3 ]  );
+	all_one_line_to_list( list_detail, item_index++, ( byte* )dos_hdr->e_res, file_data, sizeof( dos_hdr->e_res ), desc, FLAG_SHOW_DATA );
+
+	sprintf( desc, "OEM id: 0x%0.4x", dos_hdr->e_oemid  );
+	all_one_line_to_list( list_detail, item_index++, ( byte* )&dos_hdr->e_oemid, file_data, sizeof( dos_hdr->e_oemid ), desc, FLAG_SHOW_DATA );
+
+	sprintf( desc, "OEM info: 0x%0.4x", dos_hdr->e_oeminfo  );
+	all_one_line_to_list( list_detail, item_index++, ( byte* )&dos_hdr->e_oeminfo, file_data, sizeof( dos_hdr->e_oeminfo ), desc, FLAG_SHOW_DATA );
+
+	sprintf( desc, "Reserved words: 0x%0.4x 0x%0.4x 0x%0.4x 0x%0.4x 0x%0.4x 0x%0.4x 0x%0.4x 0x%0.4x 0x%0.4x 0x%0.4x ", 
+		dos_hdr->e_res2[ 0 ], 
+		dos_hdr->e_res2[ 1 ],
+		dos_hdr->e_res2[ 2 ],
+		dos_hdr->e_res2[ 3 ],
+		dos_hdr->e_res2[ 4 ], 
+		dos_hdr->e_res2[ 5 ], 
+		dos_hdr->e_res2[ 6 ],
+		dos_hdr->e_res2[ 7 ],
+		dos_hdr->e_res2[ 8 ],
+		dos_hdr->e_res2[ 9 ] );
+	all_one_line_to_list( list_detail, item_index++, ( byte* )dos_hdr->e_res2, file_data, sizeof( dos_hdr->e_res2 ), desc, FLAG_SHOW_DATA );
+
+	sprintf( desc, "NT header offset: 0x%0.8x", dos_hdr->e_lfanew );
+	all_one_line_to_list( list_detail, item_index++, ( byte* )&dos_hdr->e_lfanew, file_data, sizeof( dos_hdr->e_lfanew ), desc, FLAG_SHOW_DATA );
+	return 0;
+}
+
+int32 add_pe_nt_header( struct_infos *info, file_analyzer *analyzer )
+{
+	int32 ret;
+	char desc[ MAX_DESC_INFO_LEN ];
+	byte *file_data;
+	analyze_context *context;
+	PIMAGE_FILE_HEADER file_hdr;;
+	HWND list_detail;
+	dword out_str_len;
+	dword item_index;
+//
+//	typedef struct _IMAGE_FILE_HEADER {
+//    WORD    Machine;
+//    WORD    NumberOfSections;
+//    DWORD   TimeDateStamp;
+//    DWORD   PointerToSymbolTable;
+//    DWORD   NumberOfSymbols;
+//    WORD    SizeOfOptionalHeader;
+//    WORD    Characteristics;
+//} IMAGE_FILE_HEADER, *PIMAGE_FILE_HEADER;
+
+	file_data = analyzer->all_file_data;
+
+	context = ( analyze_context* )analyzer->context;
+	list_detail = context->list_detail;
+	file_hdr = ( PIMAGE_FILE_HEADER )info->struct_data;
+
+	ListView_DeleteAllItems( list_detail );
+
+	item_index = 0;
+	sprintf( desc, "Compatible machine: 0x%0.4x", file_hdr->Machine );
+	all_one_line_to_list( list_detail, item_index++, ( byte* )&file_hdr->Machine, file_data, sizeof( file_hdr->Machine ), desc, FLAG_SHOW_DATA );
+
+	sprintf( desc, "Number of section: 0x%0.4x", file_hdr->NumberOfSections  );
+	all_one_line_to_list( list_detail, item_index++, ( byte* )&file_hdr->NumberOfSections, file_data, sizeof( file_hdr->NumberOfSections ), desc, FLAG_SHOW_DATA );
+
+	sprintf( desc, "Time stamp: 0x%0.8x", file_hdr->TimeDateStamp  );
+	all_one_line_to_list( list_detail, item_index++, ( byte* )&file_hdr->TimeDateStamp, file_data, sizeof( file_hdr->TimeDateStamp ), desc, FLAG_SHOW_DATA );
+
+	sprintf( desc, "Pointer of symbol table: 0x%0.8x", file_hdr->PointerToSymbolTable  );
+	all_one_line_to_list( list_detail, item_index++, ( byte* )&file_hdr->PointerToSymbolTable, file_data, sizeof( file_hdr->PointerToSymbolTable ), desc, FLAG_SHOW_DATA );
+
+	sprintf( desc, "Number of symbols: 0x%0.8x", file_hdr->NumberOfSymbols  );
+	all_one_line_to_list( list_detail, item_index++, ( byte* )&file_hdr->NumberOfSymbols, file_data, sizeof( file_hdr->NumberOfSymbols ), desc, FLAG_SHOW_DATA );
+
+	sprintf( desc, "Size of optional header: 0x%0.4x", file_hdr->SizeOfOptionalHeader  );
+	all_one_line_to_list( list_detail, item_index++, ( byte* )&file_hdr->SizeOfOptionalHeader, file_data, sizeof( file_hdr->SizeOfOptionalHeader ), desc, FLAG_SHOW_DATA );
+
+	sprintf( desc, "Characteristics: 0x%0.4x", file_hdr->Characteristics );
+	all_one_line_to_list( list_detail, item_index++, ( byte* )&file_hdr->Characteristics, file_data, sizeof( file_hdr->Characteristics ), desc, FLAG_SHOW_DATA );
+
+	return 0;
+}
+
+int32 add_pe_optional_header( struct_infos *info, file_analyzer *analyzer )
 {
 	int32 i;
+	int32 ret;
+	char desc[ MAX_DESC_INFO_LEN ];
+	byte *file_data;
+	analyze_context *context;
+	PIMAGE_OPTIONAL_HEADER opt_hdr;;
+	HWND list_detail;
+	LV_ITEM lv_item;
+	dword out_str_len;
+	dword item_index;
+
+	file_data = analyzer->all_file_data;
+
+	context = ( analyze_context* )analyzer->context;
+	list_detail = context->list_detail;
+	opt_hdr = ( PIMAGE_OPTIONAL_HEADER )info->struct_data;
+
+	ListView_DeleteAllItems( list_detail );
+//
+//typedef struct _IMAGE_OPTIONAL_HEADER {
+//    //
+//    // Standard fields.
+//    //
+//
+//    WORD    Magic;
+//    BYTE    MajorLinkerVersion;
+//    BYTE    MinorLinkerVersion;
+//    DWORD   SizeOfCode;
+//    DWORD   SizeOfInitializedData;
+//    DWORD   SizeOfUninitializedData;
+//    DWORD   AddressOfEntryPoint;
+//    DWORD   BaseOfCode;
+//    DWORD   BaseOfData;
+//
+//    //
+//    // NT additional fields.
+//    //
+//
+//    DWORD   ImageBase;
+//    DWORD   SectionAlignment;
+//    DWORD   FileAlignment;
+//    WORD    MajorOperatingSystemVersion;
+//    WORD    MinorOperatingSystemVersion;
+//    WORD    MajorImageVersion;
+//    WORD    MinorImageVersion;
+//    WORD    MajorSubsystemVersion;
+//    WORD    MinorSubsystemVersion;
+//    DWORD   Win32VersionValue;
+//    DWORD   SizeOfImage;
+//    DWORD   SizeOfHeaders;
+//    DWORD   CheckSum;
+//    WORD    Subsystem;
+//    WORD    DllCharacteristics;
+//    DWORD   SizeOfStackReserve;
+//    DWORD   SizeOfStackCommit;
+//    DWORD   SizeOfHeapReserve;
+//    DWORD   SizeOfHeapCommit;
+//    DWORD   LoaderFlags;
+//    DWORD   NumberOfRvaAndSizes;
+//    IMAGE_DATA_DIRECTORY DataDirectory[IMAGE_NUMBEROF_DIRECTORY_ENTRIES];
+//} IMAGE_OPTIONAL_HEADER32, *PIMAGE_OPTIONAL_HEADER32;
+
+	item_index = 0;
+	sprintf( desc, "Magic number: 0x%0.4x", opt_hdr->Magic );
+	all_one_line_to_list( list_detail, item_index++, ( byte* )&opt_hdr->Magic, file_data, sizeof( opt_hdr->Magic ), desc, FLAG_SHOW_DATA );
+
+	sprintf( desc, "Major linker version: 0x%0.2x", opt_hdr->MajorLinkerVersion  );
+	all_one_line_to_list( list_detail, item_index++, ( byte* )&opt_hdr->MajorLinkerVersion, file_data, sizeof( opt_hdr->MajorLinkerVersion ), desc, FLAG_SHOW_DATA );
+
+	sprintf( desc, "Minor linker version: 0x%0.2x", opt_hdr->MinorLinkerVersion  );
+	all_one_line_to_list( list_detail, item_index++, ( byte* )&opt_hdr->MinorLinkerVersion, file_data, sizeof( opt_hdr->MinorLinkerVersion ), desc, FLAG_SHOW_DATA );
+
+	sprintf( desc, "Size of code: %d", opt_hdr->SizeOfCode  );
+	all_one_line_to_list( list_detail, item_index++, ( byte* )&opt_hdr->SizeOfCode, file_data, sizeof( opt_hdr->SizeOfCode ), desc, FLAG_SHOW_DATA );
+
+	sprintf( desc, "Size of initialized data: %d", opt_hdr->SizeOfInitializedData  );
+	all_one_line_to_list( list_detail, item_index++, ( byte* )&opt_hdr->SizeOfInitializedData, file_data, sizeof( opt_hdr->SizeOfInitializedData ), desc, FLAG_SHOW_DATA );
+
+	sprintf( desc, "Size of uninitialized data: %d", opt_hdr->SizeOfUninitializedData  );
+	all_one_line_to_list( list_detail, item_index++, ( byte* )&opt_hdr->SizeOfUninitializedData, file_data, sizeof( opt_hdr->SizeOfUninitializedData ), desc, FLAG_SHOW_DATA );
+
+	sprintf( desc, "Address of entry point: 0x%0.8x", opt_hdr->AddressOfEntryPoint );
+	all_one_line_to_list( list_detail, item_index++, ( byte* )&opt_hdr->AddressOfEntryPoint, file_data, sizeof( opt_hdr->AddressOfEntryPoint ), desc, FLAG_SHOW_DATA );
+
+	sprintf( desc, "Base address of code: 0x%0.8x", opt_hdr->BaseOfCode  );
+	all_one_line_to_list( list_detail, item_index++, ( byte* )&opt_hdr->BaseOfCode, file_data, sizeof( opt_hdr->BaseOfCode ), desc, FLAG_SHOW_DATA );
+
+	sprintf( desc, "Base address of data: 0x%0.8x", opt_hdr->BaseOfData  );
+	all_one_line_to_list( list_detail, item_index++, ( byte* )&opt_hdr->BaseOfData, file_data, sizeof( opt_hdr->BaseOfData ), desc, FLAG_SHOW_DATA );
+
+	sprintf( desc, "Image base address: 0x%0.8x", opt_hdr->ImageBase  );
+	all_one_line_to_list( list_detail, item_index++, ( byte* )&opt_hdr->ImageBase, file_data, sizeof( opt_hdr->ImageBase ), desc, FLAG_SHOW_DATA );
+
+	sprintf( desc, "Section alignment: 0x%0.8x", opt_hdr->SectionAlignment  );
+	all_one_line_to_list( list_detail, item_index++, ( byte* )&opt_hdr->SectionAlignment, file_data, sizeof( opt_hdr->SectionAlignment ), desc, FLAG_SHOW_DATA );
+
+	sprintf( desc, "File alignment: 0x%0.8x", opt_hdr->FileAlignment  );
+	all_one_line_to_list( list_detail, item_index++, ( byte* )&opt_hdr->FileAlignment, file_data, sizeof( opt_hdr->FileAlignment ), desc, FLAG_SHOW_DATA );
+
+	sprintf( desc, "Major OS version: 0x%0.4x", opt_hdr->MajorOperatingSystemVersion );
+	all_one_line_to_list( list_detail, item_index++, ( byte* )&opt_hdr->MajorOperatingSystemVersion, file_data, sizeof( opt_hdr->MajorOperatingSystemVersion ), desc, FLAG_SHOW_DATA );
+
+	sprintf( desc, "Minor OS version: 0x%0.4x", opt_hdr->MinorOperatingSystemVersion  );
+	all_one_line_to_list( list_detail, item_index++, ( byte* )&opt_hdr->MinorOperatingSystemVersion, file_data, sizeof( opt_hdr->MinorOperatingSystemVersion ), desc, FLAG_SHOW_DATA );
+
+	sprintf( desc, "Major image version: 0x%0.4x", opt_hdr->MajorImageVersion );
+	all_one_line_to_list( list_detail, item_index++, ( byte* )&opt_hdr->MajorImageVersion, file_data, sizeof( opt_hdr->MajorImageVersion ), desc, FLAG_SHOW_DATA );
+
+	sprintf( desc, "Minor image version: 0x%0.4x", opt_hdr->MinorImageVersion  );
+	all_one_line_to_list( list_detail, item_index++, ( byte* )&opt_hdr->MinorImageVersion, file_data, sizeof( opt_hdr->MinorImageVersion ), desc, FLAG_SHOW_DATA );
+
+	sprintf( desc, "Major subsystem version: 0x%0.4x", opt_hdr->MajorSubsystemVersion  );
+	all_one_line_to_list( list_detail, item_index++, ( byte* )&opt_hdr->MajorSubsystemVersion, file_data, sizeof( opt_hdr->MajorSubsystemVersion ), desc, FLAG_SHOW_DATA );
+
+	sprintf( desc, "Minor subsystem version: 0x%0.4x", opt_hdr->MinorSubsystemVersion );
+	all_one_line_to_list( list_detail, item_index++, ( byte* )&opt_hdr->MinorSubsystemVersion, file_data, sizeof( opt_hdr->MinorSubsystemVersion ), desc, FLAG_SHOW_DATA );
+
+	sprintf( desc, "Win32 version: 0x%0.8x", opt_hdr->Win32VersionValue );
+	all_one_line_to_list( list_detail, item_index++, ( byte* )&opt_hdr->Win32VersionValue, file_data, sizeof( opt_hdr->Win32VersionValue ), desc, FLAG_SHOW_DATA );
+
+	sprintf( desc, "Size of image: 0x%0.8x", opt_hdr->SizeOfImage );
+	all_one_line_to_list( list_detail, item_index++, ( byte* )&opt_hdr->SizeOfImage, file_data, sizeof( opt_hdr->SizeOfImage ), desc, FLAG_SHOW_DATA );
+
+	sprintf( desc, "Size of headers: 0x%0.8x", opt_hdr->SizeOfHeaders );
+	all_one_line_to_list( list_detail, item_index++, ( byte* )&opt_hdr->SizeOfHeaders, file_data, sizeof( opt_hdr->SizeOfHeaders ), desc, FLAG_SHOW_DATA );
+
+	sprintf( desc, "Check sum: 0x%0.8x", opt_hdr->CheckSum );
+	all_one_line_to_list( list_detail, item_index++, ( byte* )&opt_hdr->CheckSum, file_data, sizeof( opt_hdr->CheckSum ), desc, FLAG_SHOW_DATA );
+
+	sprintf( desc, "Subsystem: 0x%0.4x", opt_hdr->Subsystem );
+	all_one_line_to_list( list_detail, item_index++, ( byte* )&opt_hdr->Subsystem, file_data, sizeof( opt_hdr->Subsystem ), desc, FLAG_SHOW_DATA );
+
+	sprintf( desc, "Dll characteristics: 0x%0.4x", opt_hdr->DllCharacteristics );
+	all_one_line_to_list( list_detail, item_index++, ( byte* )&opt_hdr->DllCharacteristics, file_data, sizeof( opt_hdr->DllCharacteristics ), desc, FLAG_SHOW_DATA );
+
+	sprintf( desc, "Size of stack reserve: 0x%0.8x", opt_hdr->SizeOfStackReserve );
+	all_one_line_to_list( list_detail, item_index++, ( byte* )&opt_hdr->SizeOfStackReserve, file_data, sizeof( opt_hdr->SizeOfStackReserve ), desc, FLAG_SHOW_DATA );
+
+	sprintf( desc, "Size of stack commit: 0x%0.8x", opt_hdr->SizeOfStackCommit );
+	all_one_line_to_list( list_detail, item_index++, ( byte* )&opt_hdr->SizeOfStackCommit, file_data, sizeof( opt_hdr->SizeOfStackCommit ), desc, FLAG_SHOW_DATA );
+
+	sprintf( desc, "Size of heap reserve: 0x%0.8x", opt_hdr->SizeOfHeapReserve );
+	all_one_line_to_list( list_detail, item_index++, ( byte* )&opt_hdr->SizeOfHeapReserve, file_data, sizeof( opt_hdr->SizeOfHeapReserve ), desc, FLAG_SHOW_DATA );
+
+	sprintf( desc, "Size of heap commit: 0x%0.8x", opt_hdr->SizeOfHeapCommit );
+	all_one_line_to_list( list_detail, item_index++, ( byte* )&opt_hdr->SizeOfHeapCommit, file_data, sizeof( opt_hdr->SizeOfHeapCommit ), desc, FLAG_SHOW_DATA );
+
+	sprintf( desc, "PE loader flags: 0x%0.8x", opt_hdr->LoaderFlags );
+	all_one_line_to_list( list_detail, item_index++, ( byte* )&opt_hdr->LoaderFlags, file_data, sizeof( opt_hdr->LoaderFlags ), desc, FLAG_SHOW_DATA );
+
+	for( i = 0; i < sizeof( opt_hdr->DataDirectory ) / sizeof( opt_hdr->DataDirectory[ 0 ] ); i ++ )
+	{
+		sprintf( desc, "Data directory %d", i );
+		all_one_line_to_list( list_detail, item_index++, ( byte* )&opt_hdr->DataDirectory, file_data, sizeof( opt_hdr->DataDirectory[ i ] ), desc, FLAG_SHOW_DATA );
+
+		sprintf( desc, "Virtual address: 0z%0.8x", opt_hdr->DataDirectory[ i ].VirtualAddress );
+		all_one_line_to_list( list_detail, item_index++, ( byte* )&opt_hdr->DataDirectory[ i ].VirtualAddress, file_data, sizeof( opt_hdr->DataDirectory[ i ].VirtualAddress ), desc, FLAG_SHOW_DATA );
+
+		sprintf( desc, "Size: %d", opt_hdr->DataDirectory[ i ].Size );
+		all_one_line_to_list( list_detail, item_index++, ( byte* )&opt_hdr->DataDirectory[ i ].Size, file_data, sizeof( opt_hdr->DataDirectory[ i ].Size ), desc, FLAG_SHOW_DATA );
+	}
+	return 0;
+}
+
+int32 add_lib_section_desc( struct_infos *info, file_analyzer *analyzer )
+{
 	int32 ret;
 	char desc[ MAX_DESC_INFO_LEN ];
 	byte *file_data;
@@ -343,7 +794,6 @@ int32 add_lib_section_desc( struct_infos *info, file_analyzer *analyzer )
 	lib_section_hdr *section;
 	lib_section_hdr sect_copy;
 	HWND list_detail;
-	LV_ITEM lv_item;
 	dword out_str_len;
 	dword item_index;
 
@@ -357,9 +807,6 @@ int32 add_lib_section_desc( struct_infos *info, file_analyzer *analyzer )
 	clean_hdr_filled_bytes( &sect_copy );
 
 	ListView_DeleteAllItems( list_detail );
-
-	memset( &lv_item, 0, sizeof( lv_item ) );
-	lv_item.mask = LVIF_TEXT;
 
 	//char name[16];
 	//char time[12];
@@ -404,7 +851,6 @@ int32 add_index_info( struct_infos *info, file_analyzer *analyzer, char *mask_st
 	dword *sym_offset;
 	dword sym_off_num;
 	HWND list_detail;
-	LV_ITEM lv_item;
 	dword out_str_len;
 
 	file_data = analyzer->all_file_data;
@@ -415,9 +861,6 @@ int32 add_index_info( struct_infos *info, file_analyzer *analyzer, char *mask_st
 	sym_off_num = info->param1;
 
 	ListView_DeleteAllItems( list_detail );
-
-	memset( &lv_item, 0, sizeof( lv_item ) );
-	lv_item.mask = LVIF_TEXT;
 
 	for( i = 0; i < sym_off_num; i ++ )
 	{
@@ -440,7 +883,6 @@ int32 add_str_table_info( struct_infos *info, file_analyzer *analyzer )
 	byte *file_data;
 	analyze_context *context;
 	HWND list_detail;
-	LV_ITEM lv_item;
 	dword item_index;
 	dword out_str_len;
 
@@ -452,9 +894,6 @@ int32 add_str_table_info( struct_infos *info, file_analyzer *analyzer )
 	syms_str_table_len = info->param1;
 
 	ListView_DeleteAllItems( list_detail );
-
-	memset( &lv_item, 0, sizeof( lv_item ) );
-	lv_item.mask = LVIF_TEXT;
 
 	item_index = 0;
 	syms_str_offset = 0;
@@ -500,7 +939,6 @@ int32 add_coff_file_hdr_info( struct_infos *info, file_analyzer *analyzer )
 	analyze_context *context;
 	coff_file_hdr *file_hdr;
 	HWND list_detail;
-	LV_ITEM lv_item;
 	dword out_str_len;
 	dword item_index;
 
@@ -521,9 +959,6 @@ int32 add_coff_file_hdr_info( struct_infos *info, file_analyzer *analyzer )
 	file_hdr = ( coff_file_hdr* )info->struct_data;
 
 	ListView_DeleteAllItems( list_detail );
-
-	memset( &lv_item, 0, sizeof( lv_item ) );
-	lv_item.mask = LVIF_TEXT;
 
 	item_index = 0;
 	sprintf( desc, "Coff file magic number: 0x%0.2x", file_hdr->magic  );
@@ -565,7 +1000,6 @@ int32 add_coff_section_hdr_info( struct_infos *info, file_analyzer *analyzer )
 	analyze_context *context;
 	coff_sect_hdr *sect_hdr;
 	HWND list_detail;
-	LV_ITEM lv_item;
 	dword out_str_len;
 	dword item_index;
 
@@ -576,9 +1010,6 @@ int32 add_coff_section_hdr_info( struct_infos *info, file_analyzer *analyzer )
 	sect_hdr = ( coff_sect_hdr* )info->struct_data;
 
 	ListView_DeleteAllItems( list_detail );
-
-	memset( &lv_item, 0, sizeof( lv_item ) );
-	lv_item.mask = LVIF_TEXT;
 
 	//char           name[8];
 	//unsigned long  virt_size;
@@ -902,12 +1333,6 @@ int32 error_handle( error_infos *info )
 	default:
 		break;
 	}
-
-	return 0;
-}
-
-int32 analyze_pe_dos_header( PIMAGE_DOS_HEADER dos_hdr, analyze_context *context )
-{
 
 	return 0;
 }
@@ -1436,6 +1861,18 @@ int32 on_main_tree_item_seled( HTREEITEM item_seled, file_analyzer *analyzer )
 	{
 		switch( info->struct_id )
 		{
+		case STRUCT_TYPE_PE_DOS_HEADER:
+			ret = add_pe_dos_header( info, analyzer );
+			break;
+		case STRUCT_TYPE_PE_DOS_STUB:
+			ret = add_pe_dos_stub( info, analyzer );
+			break;
+		case STRUCT_TYPE_PE_NT_HEADER:
+			ret = add_pe_nt_header( info, analyzer );
+			break;
+		case STRUCT_TYPE_PE_OPTIONAL_HEADER:
+			ret = add_pe_optional_header( info, analyzer );
+			break;
 		case STRUCT_TYPE_LIB_SECTION1:
 			ret = add_lib_section_desc( info, analyzer );
 			break;
@@ -1589,6 +2026,9 @@ void CpeanalyzerDlg::OnBnClickedOk()
 	tree_main = ( HWND )::GetDlgItem( m_hWnd, IDC_TREE_MAIN );
 	list_detail = ( HWND )::GetDlgItem( m_hWnd, IDC_LIST_DETAIL );
 	edit_file_path = ( HWND )::GetDlgItem( m_hWnd, IDC_EDIT_FILE_PATH );
+
+	TreeView_DeleteAllItems( tree_main );
+	ListView_DeleteAllItems( list_detail );
 
 	analyzing_context.main_wnd = m_hWnd;
 	analyzing_context.tree_main = tree_main;

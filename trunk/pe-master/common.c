@@ -60,9 +60,13 @@ void *find_record_info( void *info, list_ele_compare compare_func )
 int32 end_analyzing()
 {
 	int32 ret;
-	ASSERT( NULL != g_all_struct_info );
+	if( NULL == g_all_struct_info )
+	{
+		return 0;
+	}
 	ret = destroy_list( g_all_struct_info, free_element_on_destroy );
 	g_all_struct_info = NULL;
+	return 0;
 }
 
 int32 open_file_dlg( HWND owner, char *seled_file_name, dword buff_len, dword flags )
