@@ -22,6 +22,16 @@
 #include "common_analyze.h"
 #include "coff_file_analyzer.h"
 
+int32 callback check_coff_file_type( byte *data, dword data_len )
+{
+	if( 0 > locate_coff_file_hdr( &data, &data_len ) )
+	{
+		return -1;
+	}
+
+	return COFF_FILE_TYPE;
+}
+
 dword get_sym_data_len( coff_reloc *relocs, dword cur_reloc_index, dword reloc_count, coff_sect_hdr *hdr )
 {
 	dword sym_data_len = 0;

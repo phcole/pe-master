@@ -127,4 +127,14 @@ typedef struct __coff_str_table
 } coff_str_table;
 #pragma pack( pop )
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+	int32 callback check_coff_file_type( byte *data, dword data_len );
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif //__COFF_FILE_ANALYZER_H__

@@ -138,9 +138,6 @@
 			<File
 				RelativePath=".\pe_file_analyzer.c">
 			</File>
-			<File
-				RelativePath=".\pe_struct_analyzer.c">
-			</File>
 		</Filter>
 		<Filter
 			Name="Í·ÎÄ¼þ"
@@ -172,6 +169,9 @@
 			</File>
 			<File
 				RelativePath=".\pe_file_analyzer.h">
+			</File>
+			<File
+				RelativePath=".\pe_struct_analyzer.c">
 			</File>
 			<File
 				RelativePath=".\pe_struct_analyzer.h">

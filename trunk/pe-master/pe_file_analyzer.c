@@ -784,10 +784,26 @@ INT32 analyze_pe_file_struct( byte *data, dword data_len, file_analyzer *analyze
 	sect_hdr = ( PIMAGE_SECTION_HEADER )( pe_hdr + offset );
 
 	//read_directories( data_dirs,dir_num, sect_hdr, file_hdr->NumberOfSections, pe_hdr );
-	
-	//read_sections( sect_hdr, file_hdr->NumberOfSections, pe_hdr );
+
+	for( i = 0; i < file_hdr->NumberOfSections; i ++ )
+	{
+		if( NULL != analyzer->struct_analyze )
+		{
+			struct_infos *info;
+			ret = add_new_record_info( &info, sizeof( *info ) );
+			if( 0 > ret )
+			{
+				goto __error;
+			}
+
+			info->struct_data = ( byte* )( sect_hdr + i );
+			info->struct_id = STRUCT_TYPE_PE_SECTION;
+			info->struct_index = i;
+			info->struct_context = analyzer;
+			analyzer->struct_analyze( info, analyzer->context );
+		}
+	}
 
 __error:
-
 	return ret;
 }

@@ -174,20 +174,6 @@ int32 get_standard_nt_hdr_characer_desc( PIMAGE_FILE_HEADER file_hdr )
 	return 0;
 }
 
-int32 get_section_infos( PIMAGE_SECTION_HEADER sect_hdr )
-{
-	sect_hdr->Name;
-	sect_hdr->Misc.VirtualSize;
-	sect_hdr->VirtualAddress;
-	sect_hdr->SizeOfRawData;
-	sect_hdr->PointerToRawData;
-	sect_hdr->PointerToRelocations;
-	sect_hdr->PointerToLinenumbers;
-	sect_hdr->NumberOfRelocations;
-	sect_hdr->NumberOfLinenumbers;
-	return 0;
-}
-
 int get_standard_sect_character_desc( PIMAGE_SECTION_HEADER sect_hdr )
 {
 	if( sect_hdr->Characteristics & IMAGE_SCN_TYPE_NO_PAD )
