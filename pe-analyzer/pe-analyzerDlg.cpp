@@ -619,6 +619,71 @@ int32 add_pe_nt_header( struct_infos *info, file_analyzer *analyzer )
 	return 0;
 }
 
+int32 add_pe_section_info( struct_infos *info, file_analyzer *analyzer )
+{
+	int32 ret;
+	char desc[ MAX_DESC_INFO_LEN ];
+	byte *file_data;
+	analyze_context *context;
+	PIMAGE_SECTION_HEADER sect_hdr;;
+	HWND list_detail;
+	dword out_str_len;
+	dword item_index;
+
+	//typedef struct _IMAGE_SECTION_HEADER {
+	//	BYTE    Name[IMAGE_SIZEOF_SHORT_NAME];
+	//	union {
+	//		DWORD   PhysicalAddress;
+	//		DWORD   VirtualSize;
+	//	} Misc;
+	//	DWORD   VirtualAddress;
+	//	DWORD   SizeOfRawData;
+	//	DWORD   PointerToRawData;
+	//	DWORD   PointerToRelocations;
+	//	DWORD   PointerToLinenumbers;
+	//	WORD    NumberOfRelocations;
+	//	WORD    NumberOfLinenumbers;
+	//	DWORD   Characteristics;
+	//} IMAGE_SECTION_HEADER, *PIMAGE_SECTION_HEADER;
+	file_data = analyzer->all_file_data;
+
+	context = ( analyze_context* )analyzer->context;
+	list_detail = context->list_detail;
+	sect_hdr = ( PIMAGE_SECTION_HEADER )info->struct_data;
+
+	ListView_DeleteAllItems( list_detail );
+
+	item_index = 0;
+	sprintf( desc, "Name: %s", sect_hdr->Name );
+	all_one_line_to_list( list_detail, item_index++, ( byte* )sect_hdr->Name, file_data, sizeof( sect_hdr->Name ), desc, FLAG_SHOW_DATA );
+
+	sprintf( desc, "Physical address: 0x%0.8x", sect_hdr->Misc.PhysicalAddress  );
+	all_one_line_to_list( list_detail, item_index++, ( byte* )&sect_hdr->Misc.PhysicalAddress, file_data, sizeof( sect_hdr->Misc.PhysicalAddress ), desc, FLAG_SHOW_DATA );
+
+	sprintf( desc, "Misc( Virtual address/Virtual Size ): 0x%0.8x", sect_hdr->VirtualAddress  );
+	all_one_line_to_list( list_detail, item_index++, ( byte* )&sect_hdr->VirtualAddress, file_data, sizeof( sect_hdr->VirtualAddress ), desc, FLAG_SHOW_DATA );
+
+	sprintf( desc, "Size of raw data: 0x%0.8x", sect_hdr->SizeOfRawData  );
+	all_one_line_to_list( list_detail, item_index++, ( byte* )&sect_hdr->SizeOfRawData, file_data, sizeof( sect_hdr->SizeOfRawData ), desc, FLAG_SHOW_DATA );
+
+	sprintf( desc, "Pointer of raw data: 0x%0.8x", sect_hdr->PointerToRawData  );
+	all_one_line_to_list( list_detail, item_index++, ( byte* )&sect_hdr->PointerToRawData, file_data, sizeof( sect_hdr->PointerToRawData ), desc, FLAG_SHOW_DATA );
+
+	sprintf( desc, "Pointer of relocations: 0x%0.8x", sect_hdr->PointerToRelocations  );
+	all_one_line_to_list( list_detail, item_index++, ( byte* )&sect_hdr->PointerToRelocations, file_data, sizeof( sect_hdr->PointerToRelocations ), desc, FLAG_SHOW_DATA );
+
+	sprintf( desc, "Pointer of line numbers: 0x%0.8x", sect_hdr->PointerToLinenumbers );
+	all_one_line_to_list( list_detail, item_index++, ( byte* )&sect_hdr->PointerToLinenumbers, file_data, sizeof( sect_hdr->PointerToLinenumbers ), desc, FLAG_SHOW_DATA );
+	
+	sprintf( desc, "Number of relocations: 0x%0.4x", sect_hdr->NumberOfRelocations );
+	all_one_line_to_list( list_detail, item_index++, ( byte* )&sect_hdr->NumberOfRelocations, file_data, sizeof( sect_hdr->NumberOfRelocations ), desc, FLAG_SHOW_DATA );
+	
+	sprintf( desc, "Characteristics: 0x%0.8x", sect_hdr->Characteristics );
+	all_one_line_to_list( list_detail, item_index++, ( byte* )&sect_hdr->Characteristics, file_data, sizeof( sect_hdr->Characteristics ), desc, FLAG_SHOW_DATA );
+
+	return 0;
+}
+
 int32 add_pe_optional_header( struct_infos *info, file_analyzer *analyzer )
 {
 	int32 i;
@@ -1873,6 +1938,9 @@ int32 on_main_tree_item_seled( HTREEITEM item_seled, file_analyzer *analyzer )
 		case STRUCT_TYPE_PE_OPTIONAL_HEADER:
 			ret = add_pe_optional_header( info, analyzer );
 			break;
+		case STRUCT_TYPE_PE_SECTION:
+			ret = add_pe_section_info( info, analyzer );
+			break;
 		case STRUCT_TYPE_LIB_SECTION1:
 			ret = add_lib_section_desc( info, analyzer );
 			break;
@@ -1978,6 +2046,7 @@ exit_thread:
 
 int32 exit_work_thread( analyze_context *context )
 {
+	int32 i;
 	int32 ret;
 	dword wait_ret;
 	g_bStop = TRUE;
@@ -1988,7 +2057,7 @@ int32 exit_work_thread( analyze_context *context )
 		return 0;
 	}
 
-	for( ; ; )
+	for( i = 0; i < 30; i ++ )
 	{
 		ret = PostThreadMessage( context->thread_id, WM_CLOSE, 0, 0 );
 		if( TRUE == ret )
@@ -1996,12 +2065,13 @@ int32 exit_work_thread( analyze_context *context )
 			break;
 		}
 	}
-	//ASSERT( FALSE != ret );
+	ASSERT( FALSE != ret );
 
 	wait_ret = WaitForSingleObject( context->analyze_thread, 2000 );
 	if( wait_ret != WAIT_OBJECT_0 )
 	{
 		TerminateThread( context->analyze_thread, 0 );
+		context->analyze_thread = NULL;
 		if( NULL != context->analyzer.all_file_data )
 		{
 			release_file_data( &context->analyzer.all_file_data );

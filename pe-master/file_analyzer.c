@@ -8,7 +8,8 @@ typedef int ( callback check_this_file_type )( byte *data, dword data_len );
 void* g_check_file_funcs[] =
 {
 	( void* )check_pe_file_type,
-	( void* )check_lib_file_type
+	( void* )check_lib_file_type,
+	( void* )check_coff_file_type
 };
 
 file_analyzer *global_analyzer = NULL;
