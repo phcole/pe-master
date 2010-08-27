@@ -15,3 +15,4 @@ release_file_data
 find_struct_info
 find_struct_info_by_id
 clean_hdr_filled_bytes
+create_pe_file

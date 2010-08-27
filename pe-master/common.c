@@ -214,7 +214,7 @@ int read_all_file_data( char *file_name, byte **data, dword *data_len )
 	ASSERT( NULL != data );
 	ASSERT( NULL != data_len );
 
-	hfile = CreateFile( file_name, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL );
+	hfile = CreateFile( file_name, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL );
 	if( INVALID_HANDLE_VALUE == hfile )
 	{
 		ret = -1;
