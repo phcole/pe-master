@@ -11,6 +11,10 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "pe-master", "pe-master_2003
 	ProjectSection(ProjectDependencies) = postProject
 	EndProjectSection
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "pe-maker", "..\pe-maker\pe-maker.vcproj", "{8889E150-6709-4020-98D9-C4C6AD62F0B7}"
+	ProjectSection(ProjectDependencies) = postProject
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfiguration) = preSolution
 		Debug = Debug
@@ -29,6 +33,10 @@ Global
 		{1C96DD72-7EB3-47D0-9DAD-5889C4FC40B1}.Debug.Build.0 = Debug|Win32
 		{1C96DD72-7EB3-47D0-9DAD-5889C4FC40B1}.Release.ActiveCfg = Release|Win32
 		{1C96DD72-7EB3-47D0-9DAD-5889C4FC40B1}.Release.Build.0 = Release|Win32
+		{8889E150-6709-4020-98D9-C4C6AD62F0B7}.Debug.ActiveCfg = Debug|Win32
+		{8889E150-6709-4020-98D9-C4C6AD62F0B7}.Debug.Build.0 = Debug|Win32
+		{8889E150-6709-4020-98D9-C4C6AD62F0B7}.Release.ActiveCfg = Release|Win32
+		{8889E150-6709-4020-98D9-C4C6AD62F0B7}.Release.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 	EndGlobalSection

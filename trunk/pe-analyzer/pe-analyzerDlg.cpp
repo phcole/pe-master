@@ -2035,6 +2035,7 @@ dword CALLBACK thread_analyze_file( LPVOID param )
 		}
 	}
 
+
 exit_thread:
 	if( NULL != context->analyzer.all_file_data )
 	{
@@ -2082,6 +2083,7 @@ int32 exit_work_thread( analyze_context *context )
 	return 0;
 }
 
+#include <Wininet.h>
 void CpeanalyzerDlg::OnBnClickedOk()
 {
 	int32 i;
