@@ -139,7 +139,7 @@
 				RelativePath=".\pe_file_analyzer.c">
 			</File>
 			<File
-				RelativePath=".\pe_make.cpp">
+				RelativePath=".\pe_make.c">
 			</File>
 		</Filter>
 		<Filter
