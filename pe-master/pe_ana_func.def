@@ -16,3 +16,6 @@ find_struct_info
 find_struct_info_by_id
 clean_hdr_filled_bytes
 create_pe_file
+add_codes
+init_pe_make
+uninit_pe_make

@@ -103,6 +103,8 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 {
    HWND hWnd;
 
+   init_pe_make();
+
    hInst = hInstance; // Store instance handle in our global variable
 
    hWnd = CreateWindow(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
@@ -136,6 +138,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	int wmId, wmEvent;
 	PAINTSTRUCT ps;
 	HDC hdc;
+	dword pe_handle;
 
 	switch (message) 
 	{
@@ -152,7 +155,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			DestroyWindow(hWnd);
 			break;
 		case ID_FILE_NEWPEFILE:
-			ret = create_pe_file( "C:\\test.exe" );
+			ret = create_pe_file( "C:\\test.exe", &pe_handle );
+			if( 0 > ret )
+			{
+				break;
+			}
+
+			ret = add_codes( pe_handle, ( byte* )( void* )InitInstance, ( byte* )( void* )WndProc - ( byte* )( void* )InitInstance, CODE_ENTRY_POINT );
 			break;
 		default:
 			return DefWindowProc(hWnd, message, wParam, lParam);
