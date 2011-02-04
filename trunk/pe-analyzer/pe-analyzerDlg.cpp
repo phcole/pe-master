@@ -55,7 +55,7 @@ CHAR g_szFilter[ MAX_FILTER_LEN ] = { 0 };
 #define LIB_SECTION1_TITLE "SECTION1"
 #define LIB_SECTION2_TITLE "SECTION2"
 #define LIB_LONGNAME_SECTION_TITLE "LONG NAME SECTION"
-#define LIB_OBJ_FILE_SECTION_TITLE "OBJ FILE SECTION "
+#define LIB_OBJ_FILE_SECTION_TITLE "OBJ FILE SECTION [RCLICK ME]"
 #define LIB_SECTION1_SYM_TABLE_TITLE "Symbol table"
 #define LIB_SECTION1_STR_TABLE_TITLE "String table"
 #define LIB_SECTION2_OBJ_OFFSETS_TITLE "Object section offsets"
@@ -191,6 +191,7 @@ void CpeanalyzerDlg::OnDropFiles( HDROP drop_info )
 		}
 	} 
 	::DragFinish( drop_info );
+
 	//CDialog::OnDropFiles( drop_info );   
 } 
 
