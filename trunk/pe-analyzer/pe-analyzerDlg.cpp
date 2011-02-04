@@ -1275,7 +1275,7 @@ BOOL CpeanalyzerDlg::OnInitDialog()
 
 	memset( &analyzing_context, 0, sizeof( analyzing_context ) );
 	//GetDlgItem( IDC_EDIT_FILTER )->SetWindowText( "CString" );
-	GetDlgItem( IDC_EDIT_PE_FILE_PATH )->SetWindowText( "C:\\WINDDK\\2600.1106\\lib\\wxp\\i386\\mfc42.lib" ); /*"E:\\Visual C++ 6.0 SP6简体中文版\\VC98\\LIB\\MSUILSTF.DLL" );*///"lib_sample.lib" );
+	//GetDlgItem( IDC_EDIT_PE_FILE_PATH )->SetWindowText( "C:\\WINDDK\\2600.1106\\lib\\wxp\\i386\\mfc42.lib" ); /*"E:\\Visual C++ 6.0 SP6简体中文版\\VC98\\LIB\\MSUILSTF.DLL" );*///"lib_sample.lib" );
 	// 设置此对话框的图标。当应用程序主窗口不是对话框时，框架将自动
 	//  执行此操作
 	SetIcon(m_hIcon, TRUE);			// 设置大图标
@@ -2068,7 +2068,7 @@ int32 exit_work_thread( analyze_context *context )
 	}
 	ASSERT( FALSE != ret );
 
-	wait_ret = WaitForSingleObject( context->analyze_thread, 2000 );
+	wait_ret = WaitForSingleObject( context->analyze_thread, 500 );
 	if( wait_ret != WAIT_OBJECT_0 )
 	{
 		TerminateThread( context->analyze_thread, 0 );
@@ -2161,17 +2161,17 @@ void CpeanalyzerDlg::OnBnClickedButtonSelFile()
 	}
 
 	::SetWindowText( edit, file_name );
+	OnBnClickedOk(); 
 }
 
 void CpeanalyzerDlg::OnBnClickedCancel()
 {
 	// TODO: Add your control notification handler code here
 	
-	if( analyzing_context.analyze_thread == NULL )
-		return;
-
-	exit_work_thread( &analyzing_context );
-
+	if( analyzing_context.analyze_thread != NULL )
+	{
+		exit_work_thread( &analyzing_context );
+	}
 	OnCancel();
 }
 
