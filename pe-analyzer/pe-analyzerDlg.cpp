@@ -195,7 +195,7 @@ void CpeanalyzerDlg::OnDropFiles( HDROP drop_info )
 	//CDialog::OnDropFiles( drop_info );   
 } 
 
-dword create_context_menu( HWND parent )
+dword create_context_menu( HWND parent, char *menu_text )
 {
 	int32 ret;
 	dword seled_menu;
@@ -207,7 +207,7 @@ dword create_context_menu( HWND parent )
 
 	menu_popup = CreatePopupMenu(); 
 	ret = AppendMenu( menu_popup, MF_STRING, 
-		(UINT)MENU_ITEM_ID_DUMP_OBJ, "&dump this .obj file" );
+		(UINT)MENU_ITEM_ID_DUMP_FILE, menu_text );
 
 	seled_menu = TrackPopupMenuEx( menu_popup, 
 		TPM_LEFTALIGN | TPM_LEFTBUTTON | TPM_RETURNCMD, 
@@ -924,7 +924,7 @@ int32 add_index_info( struct_infos *info, file_analyzer *analyzer, char *mask_st
 	context = ( analyze_context* )analyzer->context;
 	list_detail = context->list_detail;
 	sym_offset = ( dword* )info->struct_data;
-	sym_off_num = info->param1;
+	sym_off_num = info->data_len;
 
 	ListView_DeleteAllItems( list_detail );
 
@@ -957,7 +957,7 @@ int32 add_str_table_info( struct_infos *info, file_analyzer *analyzer )
 	context = ( analyze_context* )analyzer->context;
 	list_detail = context->list_detail;
 	syms_str_table = ( char* )info->struct_data;
-	syms_str_table_len = info->param1;
+	syms_str_table_len = info->data_len;
 
 	ListView_DeleteAllItems( list_detail );
 
@@ -1794,6 +1794,8 @@ int when_find_lib_func_name( sym_infos* sym_info, void *context )
 	return 0;
 }
 
+#include "addsectiondlg.h"
+#include "pe_writer.h"
 int32 on_main_tree_item_rclick( file_analyzer *analyzer )
 {
 	int32 ret;
@@ -1841,12 +1843,54 @@ int32 on_main_tree_item_rclick( file_analyzer *analyzer )
 	{
 
 	}
-	else */if( info->struct_id == STRUCT_TYPE_LIB_SECTION_OBJ_FILE )
+	else */
+	if( info->struct_id == STRUCT_TYPE_PE_FILE )
+	{
+		IMAGE_SECTION_HEADER sect_hdr; 
+		CaddsectionDlg Dlg( &sect_hdr, NULL ); 
+
+		PBYTE pe_file;
+
+		if( analyzer->pe_write_info == NULL )
+		{
+			return -1; 
+		}
+
+		seled_menu_id = SendMessage( context->main_wnd, WM_DO_UI_WORK, 0, ( LPARAM )( PVOID )"&add new section" );
+
+		if( seled_menu_id != MENU_ITEM_ID_DUMP_FILE )
+		{
+			return 0;
+		}
+
+		if( IDOK != Dlg.DoModal() )
+		{
+			return 0; 
+		}
+
+		ret = open_file_dlg( context->main_wnd, seled_file_path, MAX_PATH, 1 );
+		if( 0 > ret )
+		{
+			return -1;
+		}
+
+		ASSERT( NULL != info->struct_data );
+		pe_file = info->struct_data;
+		ret = add_new_section( &sect_hdr, analyzer->pe_write_info, analyzer ); 
+		if( 0 > ret )
+		{
+			return ret; 
+		}
+
+		return write_pe_structs_to_file( analyzer->pe_write_info, seled_file_path );
+
+	}
+	else if( info->struct_id == STRUCT_TYPE_LIB_SECTION_OBJ_FILE )
 	{
 		lib_section_hdr *section;
-		seled_menu_id = SendMessage( context->main_wnd, WM_DO_UI_WORK, 0, 0 );
+		seled_menu_id = SendMessage( context->main_wnd, WM_DO_UI_WORK, 0, ( LPARAM )( PVOID )"&dump this .obj file" );
 
-		if( seled_menu_id != MENU_ITEM_ID_DUMP_OBJ )
+		if( seled_menu_id != MENU_ITEM_ID_DUMP_FILE )
 		{
 			return 0;
 		}
@@ -2202,7 +2246,7 @@ void CpeanalyzerDlg::OnTvnSelchangedTreeMain(NMHDR *pNMHDR, LRESULT *pResult)
 
 LRESULT CpeanalyzerDlg::OnDoUIWork( WPARAM wParam, LPARAM lParam )
 {
-	return create_context_menu( m_hWnd );
+	return create_context_menu( m_hWnd, ( char* )lParam );
 }
 
 void CpeanalyzerDlg::OnRClientTreeMain( NMHDR *pNMHDR, LRESULT *pResult )

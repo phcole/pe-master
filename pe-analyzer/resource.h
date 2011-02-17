@@ -8,6 +8,7 @@
 #define IDD_PEANALYZER_DIALOG           102
 #define IDR_MAINFRAME                   128
 #define IDR_MENU_MAIN                   129
+#define IDD_DLG_ADD_SECTION             130
 #define IDC_EDIT_OUTPUT                 1000
 #define IDC_EDIT_PE_FILE_PATH           1001
 #define IDC_EDIT_FILE_PATH              1001
@@ -19,15 +20,19 @@
 #define IDC_TREE_DETAIL                 1012
 #define IDC_LIST1                       1012
 #define IDC_LIST_DETAIL                 1012
+#define IDC_EDIT1                       1013
+#define IDC_EDIT_SECTION_SIZE           1013
+#define IDC_EDIT2                       1015
+#define IDC_EDIT_SECTION_CHAR           1015
 #define ID_POPMENU1_WRITETOONW          32771
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        130
+#define _APS_NEXT_RESOURCE_VALUE        131
 #define _APS_NEXT_COMMAND_VALUE         32772
-#define _APS_NEXT_CONTROL_VALUE         1013
-#define _APS_NEXT_SYMED_VALUE           101
+#define _APS_NEXT_CONTROL_VALUE         1014
+#define _APS_NEXT_SYMED_VALUE           104
 #endif
 #endif

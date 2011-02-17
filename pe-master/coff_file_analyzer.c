@@ -542,7 +542,7 @@ int analyze_coff_file_struct( byte *data, dword data_len, dword file_index, file
 		info->struct_data = ( byte* )string;
 		info->struct_id = STRUCT_TYPE_COFF_STR_TABLE;
 		info->struct_index = 0;
-		info->param1 = str_table_len;
+		info->data_len = str_table_len;
 		info->param3 = file_index;
 		info->struct_context = analyzer;
 		analyzer->struct_analyze( info, analyzer->context );

@@ -74,13 +74,13 @@ IDR_MAINFRAME           ICON                    "res\\pe-analyzer.ico"
 IDD_ABOUTBOX DIALOGEX 0, 0, 235, 55
 STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | 
     WS_SYSMENU
-CAPTION "关于 pe-analyzer"
+CAPTION "About pe-analyzer"
 FONT 9, "MS Shell Dlg", 0, 0, 0x1
 BEGIN
     ICON            IDR_MAINFRAME,IDC_STATIC,11,17,20,20
     LTEXT           "pe-analyzer Version 1.0",IDC_STATIC,40,10,119,8,
                     SS_NOPREFIX
-    LTEXT           "Copyright (C) 2010",IDC_STATIC,40,25,119,8
+    LTEXT           "Copyright BalanceSoft (C) 2010",IDC_STATIC,40,25,119,8
     DEFPUSHBUTTON   "确定",IDOK,178,7,50,16,WS_GROUP
 END
 
@@ -98,6 +98,21 @@ BEGIN
                     0x800,3,24,124,271
     CONTROL         "",IDC_LIST_DETAIL,"SysListView32",LVS_REPORT | 
                     LVS_ALIGNLEFT | WS_BORDER | WS_TABSTOP,132,24,356,271
+END
+
+IDD_DLG_ADD_SECTION DIALOGEX 0, 0, 188, 135
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | 
+    WS_SYSMENU
+CAPTION "Add Section"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    DEFPUSHBUTTON   "确定",IDOK,2,119,50,14
+    PUSHBUTTON      "取消",IDCANCEL,135,119,50,14
+    EDITTEXT        IDC_EDIT_SECTION_SIZE,72,7,113,14,ES_AUTOHSCROLL
+    LTEXT           "Section Size",IDC_STATIC,2,11,39,8
+    GROUPBOX        "Advance",IDC_STATIC,2,32,183,85
+    EDITTEXT        IDC_EDIT_SECTION_CHAR,72,47,113,14,ES_AUTOHSCROLL
+    LTEXT           "Characteristics:",IDC_STATIC,2,51,51,8
 END
 
 
@@ -163,6 +178,14 @@ BEGIN
         TOPMARGIN, 4
         BOTTOMMARGIN, 295
     END
+
+    IDD_DLG_ADD_SECTION, DIALOG
+    BEGIN
+        LEFTMARGIN, 2
+        RIGHTMARGIN, 185
+        TOPMARGIN, 2
+        BOTTOMMARGIN, 133
+    END
 END
 #endif    // APSTUDIO_INVOKED
 
@@ -179,7 +202,6 @@ BEGIN
         MENUITEM "&Write to onw .obj file?",    ID_POPMENU1_WRITETOONW
     END
 END
-
 
 /////////////////////////////////////////////////////////////////////////////
 //

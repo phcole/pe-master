@@ -141,6 +141,9 @@
 			<File
 				RelativePath=".\pe_make.c">
 			</File>
+			<File
+				RelativePath=".\pe_writer.c">
+			</File>
 		</Filter>
 		<Filter
 			Name="Í·ÎÄ¼þ"
@@ -181,6 +184,9 @@
 			</File>
 			<File
 				RelativePath=".\pe_struct_analyzer.h">
+			</File>
+			<File
+				RelativePath=".\pe_writer.h">
 			</File>
 		</Filter>
 		<Filter

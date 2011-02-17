@@ -547,7 +547,7 @@ int32 analyze_directories_data( PIMAGE_DATA_DIRECTORY dir, dword index,
 	return ret;
 }
 
-INT32 analyze_sections( PIMAGE_SECTION_HEADER *sects, DWORD sect_num, file_analyzer *analyzer )
+__inline INT32 analyze_sections( PIMAGE_SECTION_HEADER *sects, DWORD sect_num, file_analyzer *analyzer )
 {
 	INT32 i;
 	int32 ret;
@@ -572,6 +572,8 @@ INT32 analyze_sections( PIMAGE_SECTION_HEADER *sects, DWORD sect_num, file_analy
 			info->struct_id = STRUCT_TYPE_PE_SECTION;
 			info->struct_index = i;
 			info->struct_context = analyzer;
+			info->param2 = analyzer->all_file_data + ( sect_hdr + i )->PointerToRawData; 
+			info->param3 = analyzer->all_file_data + ( sect_hdr + i )->SizeOfRawData; 
 			analyzer->struct_analyze( info, analyzer->context );
 		}	
 	}
@@ -591,10 +593,13 @@ INT32 analyze_pe_file_struct( byte *data, dword data_len, file_analyzer *analyze
 	DWORD offset;
 	DWORD dir_num;
 	PBYTE dos_stub;
+	ppe_struct_info_list pe_write_info; 
 
 	ASSERT( NULL != data );
 	ASSERT( 0 < data_len );
 	ASSERT( NULL != analyzer );
+
+	pe_write_info = analyzer->pe_write_info; 
 
 	if( sizeof( dword ) > data_len )
 	{
@@ -605,6 +610,7 @@ INT32 analyze_pe_file_struct( byte *data, dword data_len, file_analyzer *analyze
 			info.err_code = ERR_READ_OR_FILE_TO_SMALL;
 			analyzer->error_handler( &info );
 		}
+
 		ret = -1;
 		goto __error;
 	}
@@ -730,6 +736,10 @@ INT32 analyze_pe_file_struct( byte *data, dword data_len, file_analyzer *analyze
 		info->struct_index = 0;
 		info->struct_context = analyzer;
 		analyzer->struct_analyze( info, analyzer->context );
+		if( pe_write_info != NULL )
+		{
+			add_pe_struct_info( pe_write_info, info ); 
+		}
 		
 		ret = add_new_record_info( &info, sizeof( *info ) );
 		if( 0 > ret )
@@ -741,8 +751,12 @@ INT32 analyze_pe_file_struct( byte *data, dword data_len, file_analyzer *analyze
 		info->struct_id = STRUCT_TYPE_PE_DOS_STUB;
 		info->struct_index = 0;
 		info->struct_context = analyzer;
-		info->param1 = dos_hdr->e_lfanew - sizeof( IMAGE_DOS_HEADER );
+		info->data_len = dos_hdr->e_lfanew - sizeof( IMAGE_DOS_HEADER );
 		analyzer->struct_analyze( info, analyzer->context );
+		if( pe_write_info != NULL )
+		{
+			add_pe_struct_info( pe_write_info, info ); 
+		}
 		
 		ret = add_new_record_info( &info, sizeof( *info ) );
 		if( 0 > ret )
@@ -755,6 +769,10 @@ INT32 analyze_pe_file_struct( byte *data, dword data_len, file_analyzer *analyze
 		info->struct_index = 0;
 		info->struct_context = analyzer;
 		analyzer->struct_analyze( info, analyzer->context );
+		if( pe_write_info != NULL )
+		{
+			add_pe_struct_info( pe_write_info, info ); 
+		}
 
 		ret = add_new_record_info( &info, sizeof( *info ) );
 		if( 0 > ret )
@@ -767,7 +785,11 @@ INT32 analyze_pe_file_struct( byte *data, dword data_len, file_analyzer *analyze
 		info->struct_index = 0;
 		info->struct_context = analyzer;
 
-		analyzer->struct_analyze( info, analyzer->context );	
+		analyzer->struct_analyze( info, analyzer->context );
+		if( pe_write_info != NULL )
+		{
+			add_pe_struct_info( pe_write_info, info ); 
+		}
 	}
 
 	dir_num = option_hdr->NumberOfRvaAndSizes; //IMAGE_NUMBEROF_DIRECTORY_ENTRIES
@@ -800,7 +822,13 @@ INT32 analyze_pe_file_struct( byte *data, dword data_len, file_analyzer *analyze
 			info->struct_id = STRUCT_TYPE_PE_SECTION;
 			info->struct_index = i;
 			info->struct_context = analyzer;
+			info->param2 = data + ( sect_hdr + i )->PointerToRawData; 
+			info->param3 = data + ( sect_hdr + i )->SizeOfRawData; 
 			analyzer->struct_analyze( info, analyzer->context );
+			if( pe_write_info != NULL )
+			{
+				add_pe_struct_info( pe_write_info, info ); 
+			}
 		}
 	}
 

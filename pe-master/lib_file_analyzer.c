@@ -260,15 +260,15 @@ int analyze_lib_file_struct( byte *data, dword data_len, file_analyzer *analyzer
 			goto __error;
 		}
 
-		info->param1 = *( dword* )__offset;
-		littelendian2bigendian( &info->param1, sizeof( info->param1 ) );
+		info->data_len = *( dword* )__offset;
+		littelendian2bigendian( &info->data_len, sizeof( info->data_len ) );
 
 		info->struct_data = __offset + sizeof( dword ); ;
 		info->struct_id = STRUCT_TYPE_SYM_TABLE;
 		info->struct_index = 0;
 		info->struct_context = analyzer;
 
-		__offset += info->param1 * sizeof( dword ) + sizeof( dword );
+		__offset += info->data_len * sizeof( dword ) + sizeof( dword );
 		analyzer->struct_analyze( info, analyzer->context );
 
 		ret = add_new_record_info( &info, sizeof( *info ) );
@@ -279,8 +279,8 @@ int analyze_lib_file_struct( byte *data, dword data_len, file_analyzer *analyzer
 
 		data_size = atoi( sect_copy.size );
 
-		info->param1 = data_size - ( __offset - ( ( byte* )section1 + sizeof( lib_section_hdr ) ) );
-		ASSERT( info->param1 > 0 );
+		info->data_len = data_size - ( __offset - ( ( byte* )section1 + sizeof( lib_section_hdr ) ) );
+		ASSERT( info->data_len > 0 );
 		info->struct_data = __offset;
 		info->struct_id = STRUCT_TYPE_SECTION1_STR_TABLE;
 		info->struct_index = 0;
@@ -329,14 +329,14 @@ int analyze_lib_file_struct( byte *data, dword data_len, file_analyzer *analyzer
 		}
 
 		__offset = ( byte* )section2 + sizeof( lib_section_hdr );
-		info->param1 = *( dword* )__offset;
-		//littelendian2bigendian( &info->param1, sizeof( info->param1 ) );
+		info->data_len = *( dword* )__offset;
+		//littelendian2bigendian( &info->data_len, sizeof( info->data_len ) );
 		info->struct_data = __offset + sizeof( dword ); ;
 		info->struct_id = STRUCT_TYPE_OBJ_OFFSETS;
 		info->struct_index = 0;
 		info->struct_context = analyzer;
 
-		__offset += info->param1 * sizeof( dword ) + sizeof( dword );
+		__offset += info->data_len * sizeof( dword ) + sizeof( dword );
 
 		analyzer->struct_analyze( info, analyzer->context );
 
@@ -346,14 +346,14 @@ int analyze_lib_file_struct( byte *data, dword data_len, file_analyzer *analyzer
 			goto __error;
 		}
 
-		info->param1 = *( dword* )__offset;
-		//littelendian2bigendian( &info->param1, sizeof( info->param1 ) );
+		info->data_len = *( dword* )__offset;
+		//littelendian2bigendian( &info->data_len, sizeof( info->data_len ) );
 		info->struct_data = __offset + sizeof( dword ); ;
 		info->struct_id = STRUCT_TYPE_SYM_INDEXES;
 		info->struct_index = 0;
 		info->struct_context = analyzer;
 
-		__offset += info->param1 * sizeof( dword ) + sizeof( dword );
+		__offset += info->data_len * sizeof( dword ) + sizeof( dword );
 		analyzer->struct_analyze( info, analyzer->context );
 
 		ret = add_new_record_info( &info, sizeof( *info ) );
@@ -366,8 +366,8 @@ int analyze_lib_file_struct( byte *data, dword data_len, file_analyzer *analyzer
 
 		//littelendian2bigendian( &data_size, sizeof( data_size ) );
 
-		info->param1 = data_size - ( __offset - ( ( byte* )section2 + sizeof( lib_section_hdr ) ) );
-		ASSERT( info->param1 > 0 );
+		info->data_len = data_size - ( __offset - ( ( byte* )section2 + sizeof( lib_section_hdr ) ) );
+		ASSERT( info->data_len > 0 );
 		info->struct_data = __offset;
 		info->struct_id = STRUCT_TYPE_SECTION2_STR_TABLE;
 		info->struct_index = 0;
@@ -424,8 +424,8 @@ int analyze_lib_file_struct( byte *data, dword data_len, file_analyzer *analyzer
 			info->struct_id = STRUCT_TYPE_LONGNAME_SECTION_STR_TABLE;
 			info->struct_index = 0;
 			info->struct_context = analyzer;
-			info->param1 = atoi( long_name_sect->size );
-			//littelendian2bigendian( &info->param1, sizeof( info->param1 ) );
+			info->data_len = atoi( long_name_sect->size );
+			//littelendian2bigendian( &info->data_len, sizeof( info->data_len ) );
 
 			analyzer->struct_analyze( info, analyzer->context );
 		}

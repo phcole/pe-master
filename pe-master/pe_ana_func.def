@@ -19,3 +19,5 @@ create_pe_file
 add_codes
 init_pe_make
 uninit_pe_make
+write_pe_structs_to_file
+add_new_section

@@ -68,4 +68,5 @@
 #include "lib_file_analyzer.h"
 #include "pe_file_analyzer.h"
 #include "coff_file_analyzer.h"
+#include <afxdhtml.h>
 
