@@ -128,6 +128,9 @@
 			Filter="cpp;c;cxx;def;odl;idl;hpj;bat;asm;asmx"
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}">
 			<File
+				RelativePath=".\addsectionDlg.cpp">
+			</File>
+			<File
 				RelativePath=".\pe-analyzer.cpp">
 			</File>
 			<File
@@ -153,6 +156,9 @@
 			Name="Header Files"
 			Filter="h;hpp;hxx;hm;inl;inc;xsd"
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}">
+			<File
+				RelativePath=".\addsectionDlg.h">
+			</File>
 			<File
 				RelativePath=".\pe-analyzer.h">
 			</File>
@@ -180,6 +186,10 @@
 				RelativePath=".\res\pe-analyzer.rc2">
 			</File>
 		</Filter>
+		<File
+			RelativePath=".\addsectionDlg.htm"
+			DeploymentContent="TRUE">
+		</File>
 		<File
 			RelativePath=".\res\pe-analyzer.manifest">
 		</File>

@@ -26,7 +26,7 @@ int32 prepare_analyzing()
 	return init_list_element( &g_all_struct_info );
 }
 
-void add_new_record_info( void **info, dword size )
+int32 add_new_record_info( void **info, dword size )
 {
 	int ret;
 	byte *data;
@@ -35,11 +35,13 @@ void add_new_record_info( void **info, dword size )
 	ASSERT( 0 < size );
 
 	data = ( byte* )malloc( size );
-	if(NULL == data )
+	if( NULL == data )
 	{
 		*info = NULL;
 		return -1;
 	}
+
+	memset( data, 0, size ); 
 
 	ret = add_list_element( g_all_struct_info, data );
 	if( 0 > ret )
@@ -50,6 +52,11 @@ void add_new_record_info( void **info, dword size )
 
 	*info = data;
 	return 0;
+}
+
+int32 del_record_info( void *info )
+{
+	del_list_element( g_all_struct_info, info ); 
 }
 
 void *find_record_info( void *info, list_ele_compare compare_func )
@@ -66,7 +73,7 @@ int32 end_analyzing()
 	}
 	ret = destroy_list( g_all_struct_info, free_element_on_destroy );
 	g_all_struct_info = NULL;
-	return 0;
+	return ret;
 }
 
 int32 open_file_dlg( HWND owner, char *seled_file_name, dword buff_len, dword flags )

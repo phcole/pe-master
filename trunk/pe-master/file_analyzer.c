@@ -100,6 +100,34 @@ int32 callback compare_struct_info( void *element1, void *element2 )
 	return -1;
 }
 
+int32 callback check_max_index_ele( void *element1, void *element2 )
+{
+	struct_infos *info1;
+	struct_infos *info2;
+
+	ASSERT( NULL != element1 );
+	ASSERT( NULL != element2 );
+
+	info1 = ( struct_infos* )element1;
+	info2 = ( struct_infos* )element2;
+
+	if( info1 == NULL )
+	{
+		return info2; 
+	}
+	else if( info2 == NULL )
+	{
+		return info1; 
+	}
+
+	if( info1->struct_index >= info2->struct_index )
+	{
+		return info1;
+	}
+
+	return info2;
+}
+
 struct_infos *find_struct_info_by_id( dword type, dword index )
 {
 	struct_infos info;

@@ -50,7 +50,8 @@ typedef struct __struct_infos
 	dword struct_id;
 	dword struct_index;
 	dword struct_context;
-	dword param1;
+	dword data_len;
+	char added; 
 	dword param2;
 	dword param3;
 } struct_infos;
@@ -81,6 +82,16 @@ typedef int ( *struct_info_proc )( struct_infos *struct_info, void *context );
 typedef int ( *obj_file_info_proc )( obj_file_info *file_info, void *context );
 typedef int ( *error_handler_proc )( error_infos *err_info );
 
+typedef struct __pe_struct_info_list
+{
+	struct_infos *pe_dos_hdr; 
+	struct_infos *pe_dos_stub; 
+	struct_infos *pe_nt_hdr; 
+	struct_infos *pe_optional_hdr; 
+	dlist *pe_section_list; 
+	struct_infos *pe_data; 
+} pe_struct_info_list, *ppe_struct_info_list; 
+
 typedef struct __file_analyzer
 {
 	sym_info_proc syms_analyze;
@@ -94,6 +105,7 @@ typedef struct __file_analyzer
 	byte *all_file_data;
 	dword file_data_len;
 	dword file_type;
+	ppe_struct_info_list pe_write_info; 
 } file_analyzer;
 
 #ifdef __cplusplus

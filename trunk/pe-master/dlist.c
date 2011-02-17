@@ -110,6 +110,40 @@ dlist* find_list_element_by_compare( dlist *destlist, list_element element, list
 	return NULL;
 }
 
+void* check_through_list_element( dlist *destlist, list_ele_compare check_func )
+{
+	dlist *listitem;
+	dlist *listret; 
+	void *eleret; 
+
+	ASSERT( NULL != destlist );
+
+	listitem = destlist;
+	if( listitem == NULL )
+	{
+		ASSERT( FALSE ); 
+		return NULL; 
+	}
+
+	listitem = listitem->next;
+	if( listitem == NULL )
+	{
+		ASSERT( FALSE ); 
+		return NULL; 
+	}
+
+	eleret = listitem->info; 
+	for( ; NULL != listitem->next; listitem = listitem->next )
+	{
+		listitem = listitem->next; 
+
+		eleret = check_func( eleret, listitem->info );  
+	}
+
+	ASSERT( listret->info != NULL ); 
+	return listret->info;
+}
+
 dlist* get_list_item_ptr( list_element *list_item_member_addr )
 {
 	dlist *listitem;

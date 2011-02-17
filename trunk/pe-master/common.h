@@ -24,6 +24,7 @@
 #include <stdio.h>
 #include <conio.h>
 #include <malloc.h>
+#include <errno.h>
 
 #define callback __stdcall
 
@@ -62,6 +63,8 @@ int32 mem_submem( byte* target_cont, int32 target_cont_len, byte* src_mem, int32
 int dump_mem( void *mem, int size, char*str_out, dword *buff_len );
 int release_file_data( byte **data );
 int32 open_file_dlg( HWND owner, char *seled_file_name, dword buff_len, dword flags );
+int32 del_record_info( void *info ); 
+int32 add_new_record_info( void **info, dword size ); 
 
 #ifdef __cplusplus
 }

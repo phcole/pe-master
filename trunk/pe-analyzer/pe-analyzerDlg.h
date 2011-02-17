@@ -27,7 +27,7 @@
 #define WM_MAIN_TREE_ITEM_SELED ( WM_USER + 0x102 )
 #define WM_LIST_DETAIL_ITEM_SELED ( WM_USER + 0x103 )
 #define WM_MAIN_TREE_ITEM_RCLICK ( WM_USER + 0x104 )
-#define MENU_ITEM_ID_DUMP_OBJ	( 0x1001 )
+#define MENU_ITEM_ID_DUMP_FILE	( 0x1001 )
 #define WM_DO_UI_WORK ( WM_USER + 0x105 )
 
 typedef struct __analyze_context
