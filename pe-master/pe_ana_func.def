@@ -21,3 +21,4 @@ init_pe_make
 uninit_pe_make
 write_pe_structs_to_file
 add_new_section
+destroy_pe_writer
