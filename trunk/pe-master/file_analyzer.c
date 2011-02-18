@@ -22,6 +22,7 @@
 #include "pe_file_analyzer.h"
 #include "lib_file_analyzer.h"
 #include "file_analyzer.h"
+#include "pe_writer.h"
 
 typedef int ( callback check_this_file_type )( byte *data, dword data_len );
 void* g_check_file_funcs[] =
@@ -65,7 +66,17 @@ int init_analyzing( CHAR *filename, file_analyzer *analyzer )
 	analyzer->file_type = check_file_type( data, data_len );
 	if( PE_FILE_TYPE == analyzer->file_type )
 	{
+		ret = init_pe_writer( &analyzer->pe_write_info ); 
+		if( 0 > ret )
+		{
+			return ret; 
+		}
+
 		ret = analyze_pe_file_struct( data, data_len, analyzer );
+		if( 0 > ret )
+		{
+			return ret; 
+		}
 	}
 	else if( LIB_FILE_TYPE == analyzer->file_type )
 	{
@@ -146,6 +157,7 @@ int32 callback check_max_index_ele( void *element1, void *element2 )
 
 	return info2;
 }
+
 
 struct_infos *find_struct_info_by_id( dword type, dword index )
 {

@@ -1824,11 +1824,6 @@ int32 on_main_tree_item_rclick( file_analyzer *analyzer )
 		return -1;
 	}
 
-	if( FALSE == ptr_is_struct_infos( tvi.lParam ) )
-	{
-		return 0;
-	}
-
 	info = ( struct_infos* )tvi.lParam;
 
 /*	if( NULL != strstr( str_geted, LIB_SECTION1_TITLE ) )
@@ -1844,7 +1839,7 @@ int32 on_main_tree_item_rclick( file_analyzer *analyzer )
 
 	}
 	else */
-	if( info->struct_id == STRUCT_TYPE_PE_FILE )
+	if( ( dword )info == STRUCT_TYPE_PE_FILE )
 	{
 		IMAGE_SECTION_HEADER sect_hdr; 
 		CaddsectionDlg Dlg( &sect_hdr, NULL ); 
@@ -1874,8 +1869,6 @@ int32 on_main_tree_item_rclick( file_analyzer *analyzer )
 			return -1;
 		}
 
-		ASSERT( NULL != info->struct_data );
-		pe_file = info->struct_data;
 		ret = add_new_section( &sect_hdr, analyzer->pe_write_info, analyzer ); 
 		if( 0 > ret )
 		{
@@ -1885,7 +1878,13 @@ int32 on_main_tree_item_rclick( file_analyzer *analyzer )
 		return write_pe_structs_to_file( analyzer->pe_write_info, seled_file_path );
 
 	}
-	else if( info->struct_id == STRUCT_TYPE_LIB_SECTION_OBJ_FILE )
+	
+	if( FALSE == ptr_is_struct_infos( tvi.lParam ) )
+	{
+		return 0;
+	}
+
+	if( info->struct_id == STRUCT_TYPE_LIB_SECTION_OBJ_FILE )
 	{
 		lib_section_hdr *section;
 		seled_menu_id = SendMessage( context->main_wnd, WM_DO_UI_WORK, 0, ( LPARAM )( PVOID )"&dump this .obj file" );

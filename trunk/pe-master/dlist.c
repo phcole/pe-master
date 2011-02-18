@@ -113,7 +113,6 @@ dlist* find_list_element_by_compare( dlist *destlist, list_element element, list
 void* check_through_list_element( dlist *destlist, list_ele_compare check_func )
 {
 	dlist *listitem;
-	dlist *listret; 
 	void *eleret; 
 
 	ASSERT( NULL != destlist );
@@ -135,13 +134,11 @@ void* check_through_list_element( dlist *destlist, list_ele_compare check_func )
 	eleret = listitem->info; 
 	for( ; NULL != listitem->next; listitem = listitem->next )
 	{
-		listitem = listitem->next; 
-
-		eleret = check_func( eleret, listitem->info );  
+		eleret = check_func( eleret, listitem->next->info );  
 	}
 
-	ASSERT( listret->info != NULL ); 
-	return listret->info;
+	ASSERT( eleret != NULL ); 
+	return eleret;
 }
 
 dlist* get_list_item_ptr( list_element *list_item_member_addr )
