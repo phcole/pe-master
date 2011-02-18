@@ -54,6 +54,7 @@ typedef struct __struct_infos
 	char added; 
 	dword param2;
 	dword param3;
+	dword param4; 
 } struct_infos;
 
 typedef struct __error_infos

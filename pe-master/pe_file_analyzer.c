@@ -572,8 +572,8 @@ __inline INT32 analyze_sections( PIMAGE_SECTION_HEADER *sects, DWORD sect_num, f
 			info->struct_id = STRUCT_TYPE_PE_SECTION;
 			info->struct_index = i;
 			info->struct_context = analyzer;
-			info->param2 = analyzer->all_file_data + ( sect_hdr + i )->PointerToRawData; 
-			info->param3 = analyzer->all_file_data + ( sect_hdr + i )->SizeOfRawData; 
+			info->param3 = analyzer->all_file_data + ( sect_hdr + i )->PointerToRawData; 
+			info->param4 = ( sect_hdr + i )->SizeOfRawData; 
 			analyzer->struct_analyze( info, analyzer->context );
 		}	
 	}
@@ -822,8 +822,8 @@ INT32 analyze_pe_file_struct( byte *data, dword data_len, file_analyzer *analyze
 			info->struct_id = STRUCT_TYPE_PE_SECTION;
 			info->struct_index = i;
 			info->struct_context = analyzer;
-			info->param2 = data + ( sect_hdr + i )->PointerToRawData; 
-			info->param3 = data + ( sect_hdr + i )->SizeOfRawData; 
+			info->param3 = data + ( sect_hdr + i )->PointerToRawData; 
+			info->param4 = ( sect_hdr + i )->SizeOfRawData; 
 			analyzer->struct_analyze( info, analyzer->context );
 			if( pe_write_info != NULL )
 			{
