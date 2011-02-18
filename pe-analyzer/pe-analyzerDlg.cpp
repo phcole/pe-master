@@ -45,7 +45,7 @@ CHAR g_szFilter[ MAX_FILTER_LEN ] = { 0 };
 #define STRUCT_TYPE_LIB_FILE 0x600a
 #define STRUCT_TYPE_COFF_FILE 0x041c
 
-#define PE_FILE_TITLE "PE FILE"
+#define PE_FILE_TITLE "PE FILE [RCLICK]"
 #define PE_DOS_HEADER_TITLE "PE DOS HEADER"
 #define PE_DOS_STUB_TITLE "PE DOS STUB"
 #define PE_NT_HEADER_TITLE "PE NT HEADER"
@@ -1737,6 +1737,8 @@ int32 analzye_all_struct( struct_infos *struct_info, void *context )
 			ret = insert_item_in_seted_item( STRUCT_TYPE_COFF_FILE, 0, COFF_FILE_STR_TABLE_TITLE, __struct_info, __context );
 		}
 		break;
+	case STRUCT_TYPE_PE_FILL_DATA:
+		break; 
 	default:
 		ASSERT( FALSE );	
 		ret = -1;
@@ -1875,7 +1877,7 @@ int32 on_main_tree_item_rclick( file_analyzer *analyzer )
 			return ret; 
 		}
 
-		return write_pe_structs_to_file( analyzer->pe_write_info, seled_file_path );
+		return write_pe_structs_to_file( analyzer->pe_write_info, seled_file_path, ( ( ( analyze_context* )analyzer->context )->file_path ) );
 
 	}
 	
@@ -2115,6 +2117,11 @@ int32 exit_work_thread( analyze_context *context )
 	wait_ret = WaitForSingleObject( context->analyze_thread, 500 );
 	if( wait_ret != WAIT_OBJECT_0 )
 	{
+		if( NULL != context->analyzer.pe_write_info )
+		{
+			destroy_pe_writer( context->analyzer.pe_write_info ); 
+		}
+
 		TerminateThread( context->analyze_thread, 0 );
 		context->analyze_thread = NULL;
 		if( NULL != context->analyzer.all_file_data )
