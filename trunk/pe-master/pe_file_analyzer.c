@@ -832,6 +832,26 @@ INT32 analyze_pe_file_struct( byte *data, dword data_len, file_analyzer *analyze
 		}
 	}
 
+	{
+		struct_infos *filled_data;
+		ret = add_new_record_info( &filled_data, sizeof( *filled_data ) );
+		if( 0 > ret )
+		{
+			goto __error;
+		}
+
+		filled_data->struct_data = ( byte* )( sect_hdr + file_hdr->NumberOfSections );
+		filled_data->struct_id = STRUCT_TYPE_PE_FILL_DATA;
+		filled_data->struct_index = 0;
+		filled_data->struct_context = analyzer;
+		filled_data->data_len = ( data + sect_hdr->PointerToRawData ) - filled_data->struct_data; 
+		analyzer->struct_analyze( filled_data, analyzer->context );
+		if( pe_write_info != NULL )
+		{
+			add_pe_struct_info( pe_write_info, filled_data ); 
+		}
+	}
+
 __error:
 	return ret;
 }

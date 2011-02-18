@@ -90,6 +90,7 @@ typedef struct __pe_struct_info_list
 	struct_infos *pe_nt_hdr; 
 	struct_infos *pe_optional_hdr; 
 	dlist *pe_section_list; 
+	struct_infos *hdr_fill_data; 
 	struct_infos *pe_data; 
 } pe_struct_info_list, *ppe_struct_info_list; 
 
