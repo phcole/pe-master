@@ -1,0 +1,1 @@
+pe edit,resource extracting in the pe file, property of the pe file analyzing, compress/uncompress the content of the pe file, encrypt/decrypt the content of pe file,and will use some other package tech to deal with the pe file.
